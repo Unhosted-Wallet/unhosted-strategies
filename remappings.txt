@@ -1,0 +1,3 @@
+@unhosted/=lib/unhosted-modules/defi-strategies/contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+solady/=lib/solady/src/

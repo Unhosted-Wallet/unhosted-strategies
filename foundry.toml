@@ -2,5 +2,15 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+auto_detect_solc = true
+solc_version = '0.8.20'
+bytecode_hash = "none"
+cbor_metadata = false
+optimize = true
+via-ir = false
+runs = 200
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[rpc_endpoints]
+mainnet = "https://rpc.ankr.com/eth"
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
