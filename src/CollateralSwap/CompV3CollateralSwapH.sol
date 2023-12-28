@@ -30,8 +30,7 @@ contract CompV3CollateralSwap is UniswapV3Handler, CompoundV3Handler, AaveV2Hand
         address _currentCollateralToken,
         address _newCollateralToken,
         uint256 _amountToSwap,
-        uint256 _mode,
-        uint256 _loanFee
+        uint256 _mode
     ) public payable {
         uint256[] memory mode = new uint256[](1);
         uint256[] memory amount = new uint256[](1);

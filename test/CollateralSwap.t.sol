@@ -100,7 +100,7 @@ contract CollateralSwap is BiconomyTest {
         vm.stopPrank();
 
         bytes memory data = abi.encodeWithSelector(
-            handler.collateralSwap.selector, COMPOUND_V3_COMET_USDC, WRAPPED_NATIVE_TOKEN, WBTC, value, 0, loanFee
+            handler.collateralSwap.selector, COMPOUND_V3_COMET_USDC, WRAPPED_NATIVE_TOKEN, WBTC, value, 0
         );
         uint256 gas = 3e6;
         bytes32 hash = stratModule.getTransactionHash(
