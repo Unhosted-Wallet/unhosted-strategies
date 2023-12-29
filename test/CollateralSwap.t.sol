@@ -68,7 +68,7 @@ contract CollateralSwap is BiconomyTest {
 
         callback = new FlashloanCallbackHandler(address(lendingPool), UNISWAPV3_ROUTER);
         handler = new CompV3CollateralSwap(
-            WRAPPED_NATIVE_TOKEN, UNISWAPV3_ROUTER, AAVEPROTOCOL_V2_PROVIDER, address(callback)
+            WRAPPED_NATIVE_TOKEN, AAVEPROTOCOL_V2_PROVIDER, address(callback)
         );
 
         stratModule = StrategyModule(payable(stratFactory.deployStrategyModule(beneficiary, address(handler), 0)));

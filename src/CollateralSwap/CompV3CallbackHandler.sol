@@ -2,10 +2,10 @@
 pragma solidity 0.8.20;
 
 /* solhint-disable no-empty-blocks */
-import {IFlashLoanReceiver} from "@unhosted/handlers/aaveV2/IFlashLoanReceiver.sol";
-import {ISwapRouter} from "@unhosted/handlers/uniswapV3/ISwapRouter.sol";
+import {IFlashLoanReceiver} from "@unhosted/handlers/aaveV2/CallbackHandler.sol";
+import {ISwapRouter} from "@unhosted/handlers/uniswapV3/UniswapV3H.sol";
 import {IERC20} from "@unhosted/handlers/BaseHandler.sol";
-import {IComet} from "@unhosted/handlers/compoundV3/IComet.sol";
+import {IComet} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
 
 /**
  * @title Default Callback Handler - returns true for known token callbacks

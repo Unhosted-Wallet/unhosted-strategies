@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {CompoundV3Handler} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
+import {IComet} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
 import {BaseHandler, IERC20, SafeERC20} from "@unhosted/handlers/BaseHandler.sol";
-import {UniswapV3Handler} from "@unhosted/handlers/uniswapV3/UniswapV3H.sol";
 import {AaveV2Handler, ILendingPoolAddressesProviderV2} from "@unhosted/handlers/aaveV2/AaveV2H.sol";
-import {IComet} from "@unhosted/handlers/compoundV3/IComet.sol";
 
-contract CompV3CollateralSwap is UniswapV3Handler, CompoundV3Handler, AaveV2Handler {
+contract CompV3CollateralSwap is AaveV2Handler {
     using SafeERC20 for IERC20;
 
     address private immutable _fallbackHandler;
 
-    constructor(address wethAddress, address uniV3Router, address aaveV2Provider, address fallbackHandler)
-        CompoundV3Handler(wethAddress)
-        UniswapV3Handler(wethAddress, uniV3Router)
+    constructor(address wethAddress, address aaveV2Provider, address fallbackHandler)
         AaveV2Handler(wethAddress, aaveV2Provider, fallbackHandler)
     {
         _fallbackHandler = fallbackHandler;
@@ -51,7 +47,7 @@ contract CompV3CollateralSwap is UniswapV3Handler, CompoundV3Handler, AaveV2Hand
     function getContractName()
         public
         pure
-        override(UniswapV3Handler, CompoundV3Handler, AaveV2Handler)
+        override(AaveV2Handler)
         returns (string memory)
     {
         return "CollateralSwapStrategy";
