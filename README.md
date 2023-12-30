@@ -1,17 +1,24 @@
-## Foundry
+# <p align="center"><img src="logo.png" alt="Unhosted" height="100px"></p>
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+# Handlers
 
-Foundry consists of:
+This repository contains a collection of strategy handlers that can be used with the [Unhosted Strategy Module](https://github.com/Unhosted-Wallet/unhosted-modules/tree/main/defi-strategies)
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Handlers
+
+- [Compound v3 Collateral Swap](./src/CollateralSwap/CompV3CollateralSwapH.sol)
+
+## Security
+
+These smart contracts are provided 'as is' and have not undergone a security audit. They are actively under development and are not yet ready for production use.
+
+## License
+
+All smart contracts are released under MIT
 
 ## Documentation
 
-https://book.getfoundry.sh/
+https://docs.unhosted.com/
 
 ## Usage
 
@@ -25,42 +32,4 @@ $ forge build
 
 ```shell
 $ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
 ```
