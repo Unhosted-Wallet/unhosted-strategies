@@ -66,7 +66,7 @@ contract CollateralSwap is BiconomyTest {
         aaveV2Provider = ILendingPoolAddressesProviderV2(AAVEPROTOCOL_V2_PROVIDER);
         lendingPool = ILendingPoolV2(aaveV2Provider.getLendingPool());
 
-        callback = new FlashloanCallbackHandler(address(lendingPool), UNISWAPV3_ROUTER);
+        callback = new FlashloanCallbackHandler(UNISWAPV3_ROUTER);
         handler = new CompV3CollateralSwap(
             WRAPPED_NATIVE_TOKEN, AAVEPROTOCOL_V2_PROVIDER, address(callback)
         );

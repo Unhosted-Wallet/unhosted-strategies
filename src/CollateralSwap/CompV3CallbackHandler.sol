@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
 /* solhint-disable no-empty-blocks */
@@ -8,12 +8,10 @@ import {IERC20} from "@unhosted/handlers/BaseHandler.sol";
 import {IComet} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
 
 /**
- * @title Default Callback Handler - returns true for known token callbacks
- *   @dev Handles EIP-1271 compliant isValidSignature requests.
- *  @notice inspired by Richard Meissner's <richard@gnosis.pm> implementation
+ * @title Collateral swap flashloan callback handler
+ * @dev This contract temporarily replaces the default handler of SA during the flashloan process
  */
 contract FlashloanCallbackHandler is IFlashLoanReceiver {
-    address public immutable lendingPool;
     // prettier-ignore
     ISwapRouter public immutable router;
 
@@ -25,11 +23,15 @@ contract FlashloanCallbackHandler is IFlashLoanReceiver {
     error InvalidInitiator();
     error SwapFailed();
 
-    constructor(address lendingPool_, address router_) {
+    constructor(address router_) {
         router = ISwapRouter(router_);
-        lendingPool = lendingPool_;
     }
 
+    /**
+     * @dev Called by SA during the executeOperation of a flashloan
+     * @dev Transfers the borrowed tokens from SA, swaps it for new collateral,
+     * and supplies the new collateral, then withdraws the previous collateral to repay the loan
+     */
     function executeOperation(
         address[] calldata assets,
         uint256[] calldata amounts,
@@ -54,13 +56,14 @@ contract FlashloanCallbackHandler is IFlashLoanReceiver {
             params.deadline = block.timestamp;
 
             IERC20(assets[0]).transferFrom(msg.sender, address(this), amounts[0]);
-            
+
             IERC20(assets[0]).approve(address(router), amounts[0]);
             try router.exactInputSingle(params) {}
             catch {
                 revert SwapFailed();
             }
         }
+
         uint256 newBalance = IERC20(decodedData.tokenOut).balanceOf(address(this));
         IERC20(decodedData.tokenOut).approve(decodedData.comet, newBalance);
         IComet(decodedData.comet).supplyTo(msg.sender, decodedData.tokenOut, newBalance);
