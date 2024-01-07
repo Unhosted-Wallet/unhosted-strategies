@@ -11,7 +11,10 @@ import {IComet} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
  * @title Collateral swap flashloan callback handler
  * @dev This contract temporarily replaces the default handler of SA during the flashloan process
  */
-contract FlashloanCallbackHandler is UniswapV3Handler, IFlashLoanReceiver {
+contract CompV3FlashloanCallbackHandler is
+    UniswapV3Handler,
+    IFlashLoanReceiver
+{
     struct ReceiveData {
         address tokenOut;
         address comet;
@@ -20,7 +23,10 @@ contract FlashloanCallbackHandler is UniswapV3Handler, IFlashLoanReceiver {
     error InvalidInitiator();
     error SwapFailed();
 
-    constructor(address router_, address wethAddress) UniswapV3Handler(wethAddress, router_) {}
+    constructor(
+        address router_,
+        address wethAddress
+    ) UniswapV3Handler(wethAddress, router_) {}
 
     /**
      * @dev Called by SA during the executeOperation of a flashloan
@@ -39,12 +45,26 @@ contract FlashloanCallbackHandler is UniswapV3Handler, IFlashLoanReceiver {
         }
         ReceiveData memory decodedData = abi.decode(data, (ReceiveData));
         IERC20(assets[0]).transferFrom(msg.sender, address(this), amounts[0]);
-        exactInputSingle(assets[0], decodedData.tokenOut, 3000, amounts[0], 1, 0, block.timestamp);
+        exactInputSingle(
+            assets[0],
+            decodedData.tokenOut,
+            3000,
+            amounts[0],
+            0,
+            0,
+            block.timestamp
+        );
 
-        uint256 newBalance = IERC20(decodedData.tokenOut).balanceOf(address(this));
-        
+        uint256 newBalance = IERC20(decodedData.tokenOut).balanceOf(
+            address(this)
+        );
+
         IERC20(decodedData.tokenOut).approve(decodedData.comet, newBalance);
-        IComet(decodedData.comet).supplyTo(msg.sender, decodedData.tokenOut, newBalance);
+        IComet(decodedData.comet).supplyTo(
+            msg.sender,
+            decodedData.tokenOut,
+            newBalance
+        );
 
         IComet(decodedData.comet).withdrawFrom(
             msg.sender,
