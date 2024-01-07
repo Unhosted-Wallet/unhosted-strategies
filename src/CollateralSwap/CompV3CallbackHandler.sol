@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 /* solhint-disable no-empty-blocks */
 import {IFlashLoanReceiver} from "@unhosted/handlers/aaveV2/CallbackHandler.sol";
-import {ISwapRouter} from "@unhosted/handlers/uniswapV3/UniswapV3H.sol";
+import {UniswapV3Handler} from "@unhosted/handlers/uniswapV3/UniswapV3H.sol";
 import {IERC20} from "@unhosted/handlers/BaseHandler.sol";
 import {IComet} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
 
@@ -11,10 +11,7 @@ import {IComet} from "@unhosted/handlers/compoundV3/CompoundV3H.sol";
  * @title Collateral swap flashloan callback handler
  * @dev This contract temporarily replaces the default handler of SA during the flashloan process
  */
-contract FlashloanCallbackHandler is IFlashLoanReceiver {
-    // prettier-ignore
-    ISwapRouter public immutable router;
-
+contract FlashloanCallbackHandler is UniswapV3Handler, IFlashLoanReceiver {
     struct ReceiveData {
         address tokenOut;
         address comet;
@@ -23,9 +20,7 @@ contract FlashloanCallbackHandler is IFlashLoanReceiver {
     error InvalidInitiator();
     error SwapFailed();
 
-    constructor(address router_) {
-        router = ISwapRouter(router_);
-    }
+    constructor(address router_, address wethAddress) UniswapV3Handler(wethAddress, router_) {}
 
     /**
      * @dev Called by SA during the executeOperation of a flashloan
@@ -43,28 +38,11 @@ contract FlashloanCallbackHandler is IFlashLoanReceiver {
             revert InvalidInitiator();
         }
         ReceiveData memory decodedData = abi.decode(data, (ReceiveData));
-        {
-            ISwapRouter.ExactInputSingleParams memory params;
-
-            params.tokenIn = assets[0];
-            params.tokenOut = decodedData.tokenOut;
-            params.fee = 3000;
-            params.recipient = address(this);
-            params.amountIn = amounts[0];
-            params.amountOutMinimum = 1;
-            params.sqrtPriceLimitX96 = 0;
-            params.deadline = block.timestamp;
-
-            IERC20(assets[0]).transferFrom(msg.sender, address(this), amounts[0]);
-
-            IERC20(assets[0]).approve(address(router), amounts[0]);
-            try router.exactInputSingle(params) {}
-            catch {
-                revert SwapFailed();
-            }
-        }
+        IERC20(assets[0]).transferFrom(msg.sender, address(this), amounts[0]);
+        exactInputSingle(assets[0], decodedData.tokenOut, 3000, amounts[0], 1, 0, block.timestamp);
 
         uint256 newBalance = IERC20(decodedData.tokenOut).balanceOf(address(this));
+        
         IERC20(decodedData.tokenOut).approve(decodedData.comet, newBalance);
         IComet(decodedData.comet).supplyTo(msg.sender, decodedData.tokenOut, newBalance);
 
