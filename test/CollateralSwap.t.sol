@@ -11,7 +11,7 @@ import {
 } from "test/artifacts/BcnmyArtifacts.sol";
 import {
     AAVEPROTOCOL_V2_PROVIDER,
-    USDC_TOKEN,
+    USDC,
     COMPOUND_V3_COMET_USDC,
     WRAPPED_NATIVE_TOKEN,
     WBTC,
@@ -119,7 +119,7 @@ contract CollateralSwap is BiconomyTest {
     function testSingleAssetNoDebtComp3() external {
         uint256 value = 100e18;
         uint256 loanFee = (value * 9) / 1e4;
-        address provider = uniV3Factory.getPool(USDC_TOKEN, WRAPPED_NATIVE_TOKEN, 500);
+        address provider = uniV3Factory.getPool(USDC, WRAPPED_NATIVE_TOKEN, 500);
         vm.startPrank(provider);
         WETH.approve(COMPOUND_V3_COMET_USDC, value);
         WETH.transfer(address(account), loanFee);
@@ -159,7 +159,7 @@ contract CollateralSwap is BiconomyTest {
     function testSingleAssetNoDebtAave2() external {
         uint256 value = 100e18;
         uint256 loanFee = (value * 9) / 1e4;
-        address provider = uniV3Factory.getPool(USDC_TOKEN, WRAPPED_NATIVE_TOKEN, 500);
+        address provider = uniV3Factory.getPool(USDC, WRAPPED_NATIVE_TOKEN, 500);
         vm.startPrank(provider);
         WETH.approve(address(lendingPool), value);
         WETH.transfer(address(account), loanFee);
@@ -197,7 +197,7 @@ contract CollateralSwap is BiconomyTest {
 
     function testSingleAssetVariableDebtComp3() external {
         uint256 depositAmount = 1000e18;
-        address provider = uniV3Factory.getPool(USDC_TOKEN, WRAPPED_NATIVE_TOKEN, 500);
+        address provider = uniV3Factory.getPool(USDC, WRAPPED_NATIVE_TOKEN, 500);
         uint256 value = 100e18;
         vm.startPrank(provider);
         WETH.approve(COMPOUND_V3_COMET_USDC, value);
@@ -246,7 +246,7 @@ contract CollateralSwap is BiconomyTest {
 
     function testSingleAssetVariableDebtAave2() external {
         uint256 depositAmount = 1000e18;
-        address provider = uniV3Factory.getPool(USDC_TOKEN, WRAPPED_NATIVE_TOKEN, 500);
+        address provider = uniV3Factory.getPool(USDC, WRAPPED_NATIVE_TOKEN, 500);
         uint256 value = 100e18;
         vm.startPrank(provider);
         WETH.approve(address(lendingPool), depositAmount);
