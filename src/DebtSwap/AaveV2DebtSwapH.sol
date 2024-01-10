@@ -38,7 +38,7 @@ contract AaveV2DebtSwap is AaveV2Handler {
     }
 
     /**
-     * @dev Executes a collateral swap from the supplied token to another supported collateral token on Aave v2.
+     * @dev Executes a debt swap from borrowed token to another debt token on Aave v2.
      * @param borrowedToken, Address of the currently borrowed token.
      * @param targetDebtToken, Address of the new token to borrow.
      * @param debtAmountToSwap, Amount of the current borrowed token to be swapped.
@@ -111,6 +111,6 @@ contract AaveV2DebtSwap is AaveV2Handler {
         override(AaveV2Handler)
         returns (string memory)
     {
-        return "CollateralSwapStrategy";
+        return "DebtSwapStrategy";
     }
 }

@@ -32,8 +32,8 @@ contract AaveV2FlashloanCallbackHandler is
 
     /**
      * @dev Called by SA during the executeOperation of a flashloan
-     * @dev Transfers the borrowed tokens from SA, swaps it for new collateral,
-     * and supplies the new collateral, then withdraws the previous collateral to repay the loan
+     * @dev Repay the current debt and borrow the same amount of new debt token
+     * then swaps the new borrowed token to repay the loan
      */
     function executeOperation(
         address[] calldata assets,
