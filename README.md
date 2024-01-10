@@ -8,6 +8,7 @@ This repository contains a collection of strategy handlers that can be used with
 
 - [Compound v3 Collateral Swap](./src/CollateralSwap/CompV3CollateralSwapH.sol)
 - [Aave v2 Collateral Swap](./src/CollateralSwap/AaveV2CollateralSwapH.sol)
+- [Aave v2 Debt Swap](./src/DebtSwap/AaveV2DebtSwapH.sol)
 
 ## Security
 
