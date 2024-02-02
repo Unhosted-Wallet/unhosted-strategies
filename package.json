@@ -1,7 +1,7 @@
 {
-  "name": "unhosted-handlers",
+  "name": "@unhosted/strategies",
   "version": "1.0.0",
-  "description": "# Handlers",
+  "description": "Defi protocol strategy contracts for Unhosted wallet. Works with Unhosted strategy module.",
   "main": "index.js",
   "directories": {
     "lib": "lib",

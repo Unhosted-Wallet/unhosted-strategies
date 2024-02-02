@@ -27,7 +27,7 @@
     "payable-fallback": "off",
     "constructor-syntax": "error",
     "explicit-types": "error",
-    "no-unused-import": "error",
+    "no-unused-import": "warn",
     "one-contract-per-file": "warn",
     "not-rely-on-time": "off",
     "reason-string": "error",
