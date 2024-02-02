@@ -7,7 +7,11 @@ import {BaseStrategy, IERC20, SafeERC20} from "src/BaseStrategy.sol";
 import {AaveV2Strategy} from "src/aaveV2/AaveV2Strategy.sol";
 import {ICompoundV3Strategy, IComet, IWrappedNativeToken} from "src/compoundV3/ICompoundV3Strategy.sol";
 
-contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy {
+contract CompoundV3Strategy is
+    BaseStrategy,
+    AaveV2Strategy,
+    ICompoundV3Strategy
+{
     using SafeERC20 for IERC20;
 
     IWrappedNativeToken public immutable wrappedNativeTokenCompV3;
@@ -19,12 +23,24 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         address provider_,
         address aaveDataProvider_,
         address quoter_
-    ) AaveV2Strategy(wrappedNativeToken_, provider_, fallbackHandler_, aaveDataProvider_, quoter_) {
+    )
+        AaveV2Strategy(
+            wrappedNativeToken_,
+            provider_,
+            fallbackHandler_,
+            aaveDataProvider_,
+            quoter_
+        )
+    {
         wrappedNativeTokenCompV3 = IWrappedNativeToken(wrappedNativeToken_);
         compFallbackHandler = fallbackHandler_;
     }
 
-    function supply(address comet, address asset, uint256 amount) public payable {
+    function supply(
+        address comet,
+        address asset,
+        uint256 amount
+    ) public payable {
         amount = _getBalance(asset, amount);
         if (amount == 0) {
             revert InvalidAmount();
@@ -52,7 +68,11 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         );
     }
 
-    function withdraw(address comet, address asset, uint256 amount) public payable returns (uint256 withdrawAmount) {
+    function withdraw(
+        address comet,
+        address asset,
+        uint256 amount
+    ) public payable returns (uint256 withdrawAmount) {
         if (amount == 0) {
             revert InvalidAmount();
         }
@@ -72,7 +92,10 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         }
     }
 
-    function withdrawETH(address comet, uint256 amount) public payable returns (uint256 withdrawAmount) {
+    function withdrawETH(
+        address comet,
+        uint256 amount
+    ) public payable returns (uint256 withdrawAmount) {
         if (amount == 0) {
             revert InvalidAmount();
         }
@@ -93,7 +116,10 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         wrappedNativeTokenCompV3.withdraw(withdrawAmount);
     }
 
-    function borrow(address comet, uint256 amount) public payable returns (uint256 borrowAmount) {
+    function borrow(
+        address comet,
+        uint256 amount
+    ) public payable returns (uint256 borrowAmount) {
         if (amount == 0) {
             revert InvalidAmount();
         }
@@ -113,7 +139,10 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         }
     }
 
-    function borrowETH(address comet, uint256 amount) public payable returns (uint256 borrowAmount) {
+    function borrowETH(
+        address comet,
+        uint256 amount
+    ) public payable returns (uint256 borrowAmount) {
         if (IComet(comet).baseToken() != address(wrappedNativeTokenCompV3)) {
             revert InvalidComet();
         }
@@ -187,30 +216,48 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         uint256[] memory mode = new uint256[](1);
         uint256[] memory amount = new uint256[](1);
         address[] memory token = new address[](1);
-        CompCollateralSwapData memory receiveData = CompCollateralSwapData(targetCollateralToken, comet);
+        CompCollateralSwapData memory receiveData = CompCollateralSwapData(
+            targetCollateralToken,
+            comet
+        );
         mode[0] = debtMode;
         amount[0] = collateralAmountToSwap;
         token[0] = suppliedCollateralToken;
         bytes memory data = abi.encode(uint8(1), receiveData);
 
         IComet(comet).allow(compFallbackHandler, true);
-        IERC20(suppliedCollateralToken).approve(compFallbackHandler, collateralAmountToSwap);
+        IERC20(suppliedCollateralToken).approve(
+            compFallbackHandler,
+            collateralAmountToSwap
+        );
         flashLoan(token, amount, mode, data);
         IComet(comet).allow(compFallbackHandler, false);
         IERC20(suppliedCollateralToken).approve(compFallbackHandler, 0);
     }
 
-    function getStrategyName() public pure virtual override(AaveV2Strategy, BaseStrategy) returns (string memory) {
+    function getStrategyName()
+        public
+        pure
+        virtual
+        override(AaveV2Strategy, BaseStrategy)
+        returns (string memory)
+    {
         return "CompoundV3";
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _supply(address comet, address dst, address asset, uint256 amount) internal {
+    function _supply(
+        address comet,
+        address dst,
+        address asset,
+        uint256 amount
+    ) internal {
         IERC20(asset).forceApprove(comet, amount);
         /* solhint-disable no-empty-blocks */
-        try IComet(comet).supplyTo(dst, asset, amount) {}
-        catch Error(string memory reason) {
+        try IComet(comet).supplyTo(dst, asset, amount) {} catch Error(
+            string memory reason
+        ) {
             _revertMsg("supply", reason);
         } catch {
             _revertMsg("supply");
@@ -218,21 +265,28 @@ contract CompoundV3Strategy is BaseStrategy, AaveV2Strategy, ICompoundV3Strategy
         IERC20(asset).forceApprove(comet, 0);
     }
 
-    function _withdraw(address comet, address from, address asset, uint256 amount)
-        internal
-        returns (uint256 withdrawAmount, bool isBorrowed)
-    {
+    function _withdraw(
+        address comet,
+        address from,
+        address asset,
+        uint256 amount
+    ) internal returns (uint256 withdrawAmount, bool isBorrowed) {
         uint256 beforeBalance = IERC20(asset).balanceOf(address(this));
         uint256 borrowBalanceBefore = IComet(comet).borrowBalanceOf(from);
 
-        try IComet(comet).withdrawFrom(
-            from,
-            address(this), // to
-            asset,
-            amount
-        ) {
-            withdrawAmount = IERC20(asset).balanceOf(address(this)) - beforeBalance;
-            isBorrowed = IComet(comet).borrowBalanceOf(from) > borrowBalanceBefore;
+        try
+            IComet(comet).withdrawFrom(
+                from,
+                address(this), // to
+                asset,
+                amount
+            )
+        {
+            withdrawAmount =
+                IERC20(asset).balanceOf(address(this)) -
+                beforeBalance;
+            isBorrowed =
+                IComet(comet).borrowBalanceOf(from) > borrowBalanceBefore;
         } catch Error(string memory reason) {
             _revertMsg("withdraw", reason);
         } catch {

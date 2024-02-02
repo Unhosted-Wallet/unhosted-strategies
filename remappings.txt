@@ -1,2 +1,3 @@
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@unhosted/modules/=lib/unhosted-modules/
 solady/=lib/solady/src/

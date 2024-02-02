@@ -5,7 +5,6 @@ import {IComet} from "src/compoundV3/helpers/IComet.sol";
 import {IWrappedNativeToken} from "src/interface/IWrappedNativeToken.sol";
 
 interface ICompoundV3Strategy {
-
     struct CompCollateralSwapData {
         address tokenOut;
         address comet;

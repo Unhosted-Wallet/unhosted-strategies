@@ -8,9 +8,13 @@ interface ILido {
 
     function sharesOf(address _account) external view returns (uint256);
 
-    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+    function getPooledEthByShares(
+        uint256 _sharesAmount
+    ) external view returns (uint256);
 }
 
 interface ILidoStrategy {
-    function submit(uint256 value) external payable returns (uint256 stTokenAmount);
+    function submit(
+        uint256 value
+    ) external payable returns (uint256 stTokenAmount);
 }

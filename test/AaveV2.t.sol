@@ -33,7 +33,7 @@ import {IUniswapV3Factory} from "test/interfaces/IUniswapV3Factory.sol";
 
 import {ILendingPoolAddressesProviderV2} from "src/aaveV2/helpers/ILendingPoolAddressesProviderV2.sol";
 import {ILendingPoolV2} from "src/aaveV2/helpers/ILendingPoolV2.sol";
-import {StrategyModule, IStrategyModule, Enum} from "src/StrategyModule/StrategyModule.sol";
+import {StrategyModule, IStrategyModule, Enum} from "@unhosted/modules/strategy-module/src/StrategyModule.sol";
 
 import "solady/tokens/ERC20.sol";
 import "forge-std/console.sol";

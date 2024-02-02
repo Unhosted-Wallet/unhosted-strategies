@@ -10,7 +10,6 @@ import {IVariableDebtToken} from "src/aaveV2/helpers/IVariableDebtToken.sol";
 import {IFlashLoanReceiver} from "src/aaveV2/helpers/IFlashLoanReceiver.sol";
 
 interface IAaveV2Strategy {
-
     struct AaveCollateralSwapData {
         address tokenOut;
         address lendingPool;

@@ -5,7 +5,6 @@ pragma solidity 0.8.20;
 import {IFlashLoanReceiver, ILendingPoolV2} from "src/aaveV2/IAaveV2Strategy.sol";
 import {ISwapRouter} from "src/uniswapV3/helpers/ISwapRouter.sol";
 import {IERC20, SafeERC20} from "src/BaseStrategy.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Default Fallback Handler - returns true for known token callbacks
@@ -14,8 +13,6 @@ import "forge-std/console.sol";
  */
 contract AaveV2FallbackHandler is IFlashLoanReceiver {
     using SafeERC20 for IERC20;
-
-    ISwapRouter public immutable router;
 
     struct AaveCollateralSwapData {
         address tokenOut;
@@ -30,6 +27,8 @@ contract AaveV2FallbackHandler is IFlashLoanReceiver {
         uint256 repayRate;
         uint256 borrowRate;
     }
+
+    ISwapRouter public immutable router;
 
     error InvalidInitiator();
 
@@ -49,9 +48,9 @@ contract AaveV2FallbackHandler is IFlashLoanReceiver {
         }
         uint8 mode = abi.decode(data, (uint8));
 
-        if(mode == 1){
+        if (mode == 1) {
             _collateralSwap(assets, amounts, data);
-        } else if(mode == 2) {
+        } else if (mode == 2) {
             _debtSwap(assets, amounts, data);
         }
 
@@ -63,21 +62,50 @@ contract AaveV2FallbackHandler is IFlashLoanReceiver {
         uint256[] calldata amounts,
         bytes calldata data
     ) private {
-        (, AaveCollateralSwapData memory decodedData) = abi.decode(data, (uint8, AaveCollateralSwapData));
+        (, AaveCollateralSwapData memory decodedData) = abi.decode(
+            data,
+            (uint8, AaveCollateralSwapData)
+        );
         IERC20(assets[0]).transferFrom(msg.sender, address(this), amounts[0]);
 
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams(assets[0], decodedData.tokenOut, 3000, address(this), block.timestamp, amounts[0], 0, 0);
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams(
+                assets[0],
+                decodedData.tokenOut,
+                3000,
+                address(this),
+                block.timestamp,
+                amounts[0],
+                0,
+                0
+            );
 
         IERC20(assets[0]).forceApprove(address(router), amounts[0]);
         uint256 newBalance = router.exactInputSingle(params);
 
-        IERC20(decodedData.tokenOut).approve(decodedData.lendingPool, newBalance);
+        IERC20(decodedData.tokenOut).approve(
+            decodedData.lendingPool,
+            newBalance
+        );
 
-        ILendingPoolV2(decodedData.lendingPool).deposit(decodedData.tokenOut, newBalance, msg.sender, 0);
+        ILendingPoolV2(decodedData.lendingPool).deposit(
+            decodedData.tokenOut,
+            newBalance,
+            msg.sender,
+            0
+        );
 
-        IERC20(decodedData.aToken).transferFrom(msg.sender, address(this), amounts[0]);
+        IERC20(decodedData.aToken).transferFrom(
+            msg.sender,
+            address(this),
+            amounts[0]
+        );
 
-        ILendingPoolV2(decodedData.lendingPool).withdraw(assets[0], amounts[0], msg.sender);
+        ILendingPoolV2(decodedData.lendingPool).withdraw(
+            assets[0],
+            amounts[0],
+            msg.sender
+        );
     }
 
     function _debtSwap(
@@ -85,7 +113,10 @@ contract AaveV2FallbackHandler is IFlashLoanReceiver {
         uint256[] calldata amounts,
         bytes calldata data
     ) private {
-        (, AaveDebtSwapData memory decodedData) = abi.decode(data, (uint8, AaveDebtSwapData));
+        (, AaveDebtSwapData memory decodedData) = abi.decode(
+            data,
+            (uint8, AaveDebtSwapData)
+        );
         IERC20(assets[0]).transferFrom(msg.sender, address(this), amounts[0]);
         IERC20(assets[0]).approve(decodedData.lendingPool, amounts[0]);
 
@@ -102,10 +133,23 @@ contract AaveV2FallbackHandler is IFlashLoanReceiver {
             0,
             msg.sender
         );
-        
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams(decodedData.tokenOut, assets[0], 3000, msg.sender, block.timestamp, decodedData.amountToBorrow, 0, 0);
 
-        IERC20(decodedData.tokenOut).forceApprove(address(router), decodedData.amountToBorrow);
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams(
+                decodedData.tokenOut,
+                assets[0],
+                3000,
+                msg.sender,
+                block.timestamp,
+                decodedData.amountToBorrow,
+                0,
+                0
+            );
+
+        IERC20(decodedData.tokenOut).forceApprove(
+            address(router),
+            decodedData.amountToBorrow
+        );
         router.exactInputSingle(params);
     }
 }
