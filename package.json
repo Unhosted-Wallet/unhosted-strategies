@@ -1,6 +1,6 @@
 {
   "name": "@unhosted/strategies",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Defi protocol strategy contracts for Unhosted wallet. Works with Unhosted strategy module.",
   "main": "index.js",
   "directories": {

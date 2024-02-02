@@ -2,8 +2,6 @@
 
 # Strategies
 
-# Defi Strategy Handlers
-
 This library includes DeFi protocol strategies. It undergoes continuous updates, expanding its functionality by incorporating new protocols and automated DeFi strategies. [Unhosted Strategy Module](https://github.com/Unhosted-Wallet/unhosted-modules/tree/main/strategy-module)
 
 ## Overview
