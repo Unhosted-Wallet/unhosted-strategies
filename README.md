@@ -6,13 +6,7 @@
 
 This library includes DeFi protocol strategies. It undergoes continuous updates, expanding its functionality by incorporating new protocols and automated DeFi strategies. [Unhosted Strategy Module](https://github.com/Unhosted-Wallet/unhosted-modules/tree/main/strategy-module)
 
-<<<<<<< HEAD
 ## Overview
-=======
-- [Compound v3 Collateral Swap](./src/CollateralSwap/CompV3CollateralSwapH.sol)
-- [Aave v2 Collateral Swap](./src/CollateralSwap/AaveV2CollateralSwapH.sol)
-- [Aave v2 Debt Swap](./src/DebtSwap/AaveV2DebtSwapH.sol)
->>>>>>> main
 
 ### Installation
 
