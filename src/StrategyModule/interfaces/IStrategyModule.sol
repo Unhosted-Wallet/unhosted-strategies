@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+// solhint-disable-next-line
+import {ISignatureValidator, ISignatureValidatorConstants} from "src/StrategyModule/interfaces/ISignatureValidator.sol";
+
 abstract contract Enum {
     enum Operation {
         Call,
@@ -34,50 +37,58 @@ interface IExecFromModule {
 
 interface IStrategyModule {
     struct StrategyTransaction {
+        Enum.Operation operation;
+        address strategy;
         uint256 value;
-        uint256 gas;
-        bytes data;
+        bytes strategyData;
     }
 
-    enum Operation {
-        Call,
-        DelegateCall
+    struct TriggeredStrategyTransaction {
+        Enum.Operation operation;
+        address strategy;
+        uint256 value;
+        bytes strategyData;
+        address trigger;
+        bytes triggerData;
     }
 
     /**
-     * @notice Throws when the address that signed the data (restored from signature)
-     * differs from the address we expected to sign the data (i.e. some authorized address)
+     * @notice Throws when the address that signed the Transaction (restored from signature)
+     * differs from the address we expected to sign the Transaction (i.e. some authorized address)
      */
     error InvalidSignature();
 
-    function init(
-        address beneficiary_,
-        address handler_
-    ) external returns (bool);
-
     /**
-     * @dev Calls any arbitrary logic from handler without any confirmation if the
+     * @dev Calls any arbitrary logic from strategy without any confirmation if the
      * module is enabled and SA owner signed the data
-     * @dev Transfer a percentage of the fee based gas usage to beneficiary of this strategy module
-     * @param smartAccount, address of biconomy smart account to execute strategy for
-     * @param _tx, StrategyTransaction structure including amount if value to send to handler, gas and the arbitrary data to call on handler
+     * @dev Transfer a percentage of the fee based gas usage to beneficiary of the strategy
+     * @param smartAccount, address of the smart account to execute strategy
+     * @param _tx, StrategyTransaction structure including amount of value to call and the arbitrary data to call on strategy
      * @param signatures, signature that should be signed by SA owner following EIP1271
-     * @return fee paid fee to beneficiary
-     * @return executed whether the execution is success or fail
-     * @return returnData the data returned from handler called function
+     * @return executed whether the execution was successful or failed
+     * @return gasUsed for execution
+     * @return returnData the data returned from strategy called function
      */
-    function execStrategy(
+    function executeStrategy(
         address smartAccount,
         StrategyTransaction memory _tx,
         bytes memory signatures
-    ) external returns (uint256 fee, bool executed, bytes memory returnData);
+    )
+        external
+        returns (bool executed, uint256 gasUsed, bytes memory returnData);
+
+    function executeTriggeredStrategy(
+        address smartAccount,
+        TriggeredStrategyTransaction memory _tx,
+        bytes memory signatures
+    ) external returns (bool executed, uint256 fee, bytes memory returnData);
 
     /**
      * @dev Allows to estimate a transaction.
      * @dev This method is for estimation only, it will always revert and encode the result in the revert data.
-     * @dev Call this method to get an estimate of the execTransactionFromModule gas usage that are deducted with `execStrategy`
-     * @param smartAccount, address of biconomy smart account that execute tx
-     * @param _tx, StrategyTransaction structure including amount if value to send to handler, gas and the arbitrary data to call on handler
+     * @dev Call this method to get an estimate of the execTransactionFromModule gas usage that are deducted with `executeStrategy`
+     * @param smartAccount, address of the smart account to execute tx
+     * @param _tx, StrategyTransaction structure including amount of value to call and the arbitrary data to call on strategy
      */
     function requiredTxGas(
         address smartAccount,
@@ -85,37 +96,45 @@ interface IStrategyModule {
     ) external;
 
     /**
-     * @dev Allows beneficiary to claim the accumulated fees in module contract
+     * @dev Allows beneficiary of a strategy to claim the accumulated fees
      */
     function claim() external;
+
+    function updateStrategy(address strategy, address dev) external;
 
     /**
      * @dev Returns hash to be signed by owner.
      * @param _nonce Transaction nonce.
-     * @param smartAccount Address of the Smart Account to execute the txn.
      * @return Transaction hash.
      */
-    function getTransactionHash(
+    function getStrategyTxHash(
         StrategyTransaction calldata _tx,
-        uint256 _nonce,
-        address smartAccount
+        uint256 _nonce
+    ) external view returns (bytes32);
+
+    function getTriggeredStrategyTxHash(
+        TriggeredStrategyTransaction calldata _tx,
+        uint256 _nonce
     ) external view returns (bytes32);
 
     /**
      * @dev Returns the bytes that are hashed to be signed by owner.
-     * @param smartAccount Address of the Smart Account to execute the txn.
      * @param _tx The strategy transaction data to be signed.
      * @param _nonce Transaction nonce.
      * @return strategyHash bytes that are hashed to be signed by the owner.
      */
     function encodeStrategyData(
-        address smartAccount,
         StrategyTransaction memory _tx,
         uint256 _nonce
     ) external view returns (bytes memory);
 
+    function encodeTriggeredStrategyData(
+        TriggeredStrategyTransaction memory _tx,
+        uint256 _nonce
+    ) external view returns (bytes memory);
+
     /**
-     * @dev returns a value from the nonces 2d mapping
+     * @dev returns a value from the nonces mapping
      * @param smartAccount address of smart account to get nonce
      * @return nonce : the number of transactions made by smart account
      */
@@ -123,16 +142,7 @@ interface IStrategyModule {
 
     /**
      * @dev Returns the domain separator for this contract, as defined in the EIP-712 standard.
-     * @param smartAccount Address of the Smart Account as verifying contract address
      * @return bytes32 The domain separator hash.
      */
-    function domainSeparator(
-        address smartAccount
-    ) external view returns (bytes32);
-
-    /**
-     * @notice Returns the ID of the chain the contract is currently deployed on.
-     * @return CHAIN_ID The ID of the current chain as a uint256.
-     */
-    function getChainId() external view returns (uint256);
+    function domainSeparator() external view returns (bytes32);
 }

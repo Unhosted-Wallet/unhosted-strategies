@@ -10,8 +10,6 @@ import "solady/utils/ECDSA.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "src/mocks/MockERC20.sol";
-
 uint256 constant OV_FIXED = 21000;
 uint256 constant OV_PER_USEROP = 18300;
 uint256 constant OV_PER_WORD = 4;
@@ -107,57 +105,6 @@ abstract contract BiconomyTest is Test {
         UserOperation memory op = fillUserOp(fillData(address(0), 0, ""));
         executeUserOp(op, "creation", 0);
     }
-
-    function testTransferNative(address _recipient, uint256 _amount) internal {
-        createAccount(owner);
-        _amount = bound(_amount, 1, address(account).balance / 2);
-        UserOperation memory op = fillUserOp(fillData(_recipient, _amount, ""));
-        executeUserOp(op, "native", _amount);
-    }
-
-    function testTransferNative() internal {
-        createAccount(owner);
-        uint256 amount = 5e17;
-        address recipient = makeAddr("recipient");
-        UserOperation memory op = fillUserOp(fillData(recipient, amount, ""));
-        executeUserOp(op, "native", amount);
-    }
-
-    function testTransferERC20() internal {
-        createAccount(owner);
-        MockERC20 mockERC20 = new MockERC20();
-        mockERC20.mint(address(account), 1e18);
-        uint256 amount = 5e17;
-        address recipient = makeAddr("recipient");
-        uint256 balance = mockERC20.balanceOf(recipient);
-        UserOperation memory op = fillUserOp(
-            fillData(address(mockERC20), 0, abi.encodeWithSelector(mockERC20.transfer.selector, recipient, amount))
-        );
-        executeUserOp(op, "erc20", 0);
-        assertEq(mockERC20.balanceOf(recipient), balance + amount);
-    }
-
-    // function testBenchmark1Vanila() external {
-    //     testCreation();
-    //     testTransferNative();
-    //     testTransferERC20();
-    // }
-
-    // function testBenchmark2Paymaster() external {
-    //     entryPoint.depositTo{value: 100e18}(address(paymaster));
-    //     paymasterData = validatePaymasterAndData;
-    //     dummyPaymasterData = getDummyPaymasterAndData;
-    //     testCreation();
-    //     testTransferNative();
-    //     testTransferERC20();
-    // }
-
-    // function testBenchmark3Deposit() external {
-    //     entryPoint.depositTo{value: 100e18}(address(account));
-    //     testCreation();
-    //     testTransferNative();
-    //     testTransferERC20();
-    // }
 
     function emptyPaymasterAndData(UserOperation memory _op) internal pure returns (bytes memory ret) {}
 
