@@ -7,7 +7,8 @@ import {Asset} from "../structs/Asset.sol";
 interface IUWDebtReport {
 
    /// @notice Reports the debt value of a position.
+   /// @dev Make sure to balance this well with the `IUWPositionReport` and the assets in the users wallet to prevent the double counting of assets.
    /// @param position the position to check.
    /// @return assets the debt of the position.
-   function positionDebt(bytes32 position) external view returns (Asset[] memory assets);
+   function debt(bytes32 position) external view returns (Asset[] memory assets);
 }

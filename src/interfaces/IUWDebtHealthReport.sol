@@ -9,6 +9,6 @@ interface IUWDebtHealthReport {
    /// @return max an amount at (or above) its no longer possible to take out additional debt against this position.
    /// @return liquidatable an amount at which the position is at risk of being liquidated.
    /// @dev these amounts define the thresholds, but their meaning is up to the strategy, it can be a health score, USD amounts, token amounts etc.
-   function positionDebtHealth(bytes32 position) external view returns (uint256 current, uint256 max, uint256 liquidatable);
+   function debtHealth(bytes32 position) external view returns (uint256 current, uint256 max, uint256 liquidatable);
 
 }
