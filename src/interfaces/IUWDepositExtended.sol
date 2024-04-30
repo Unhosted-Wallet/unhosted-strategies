@@ -6,6 +6,6 @@ interface IUWDepositExtended {
 
     /// @notice Deposits into a strategy, requires the UI to pass in the data that is specific to this strategy.
     /// @param data special data field that holds additional required data for the strategy.
-    function deposit(bytes calldata data) payable external;
+    function deposit(bytes calldata data) external payable;
 
 }

@@ -10,5 +10,5 @@ interface IUWDeposit {
     /// @param position specifies the position to deposit into, its up to the strategy implementation to decide what this refers to.
     /// @param asset the asset that is being deposited into this strategy.
     /// @param amount the amount of the asset to deposit.
-    function deposit(bytes32 position, address asset, uint256 amount) payable external;
+    function deposit(bytes32 position, address asset, uint256 amount) external payable;
 }
