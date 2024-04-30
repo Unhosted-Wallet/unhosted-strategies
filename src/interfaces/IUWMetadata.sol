@@ -6,6 +6,6 @@ interface IUWMetadata {
 
     /// @notice Exposes the IPFS hash that contains the metadata of this strategy. 
     /// @return ipfs the IPFS hash where the metadata for this strategy is located.
-    function metadata() external returns (bytes32 ipfs);
+    function metadata() external view returns (bytes32 ipfs);
 
 }
