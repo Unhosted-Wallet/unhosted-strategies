@@ -48,3 +48,16 @@ The returned `current` value should be 0 if a user has only deposited colleteral
 Some examples of denominations:
 - current $100, max $175, liquidatable $250 (prefered)
 - current 40%, max 70%, liquidatable 100%
+
+## Errors
+Standardizing errors plays a big role in improving the UX as well as the DX. UIs should focus heavily on simulating transactions, even if a user does not intend to perform such transaction. As errors tell a lot about the underlying state of the strategy.
+
+As an example, lets say we have a protocol where we can deposit 1 ETH and it is locked for a month. After that month we can withdraw our 1 ETH. A naive UI may assume for every strategy that has a withdraw it can always withdraw. But for our example this is not the case. 
+
+What a UI should do in this case is simulate a withdraw, it would then see that it reverts with the error `UNAVAILABLE_UNTIL(bytes32 position, uint256 timestamp)` which it can use to display rich information, such as showing a countdown and disabling the button with an informative text. The advantage of this approach is that this flow will work for any action.
+
+### General Errors
+- `ASSET_AMOUNT_OUT_OF_BOUNDS(address asset, uint256 min, uint256 max, uint256 provided)`
+- `INVALID_POSITION(bytes32 position)`
+- `UNAVAILABLE_UNTIL(bytes32 position, uint256 timestamp)`
+- `UNAVAILABLE(bytes32 id)`
