@@ -3,6 +3,8 @@ The interfaces mention `position` often, this argument is there for protocols wh
 
 If a user is never able to have more than a single position for a strategy (because the underlying protocol only support a single position) then the strategy should use `IUWConstants.SINGLE_POSITON` to represent this position.
 
+UIs are able to check what functions are supported by a strategy by using `IERC165`.
+
 ### Deposit
 For deposit there are three interfaces, `IUWDeposit`, `IUWDepositBeneficiary` and `IUWDepositExtended`. All strategies should strive to implement `IUWDeposit` and if possible also `IUWDepositBeneficiary`, in cases where this is not possible or would have serious downsides its possible to implement the alternative `IUWDepositExtended`.
 
@@ -12,7 +14,10 @@ The deposit event should emit an `TrackPosition` event if its likely this was th
 For deposits there is `IUWWithdraw` and `IUWWithdrawExtended`. All strategies should try and implement `IUWWithdraw`, if thats not possible or would have serious downsides it can implement the alternative 'IUWWithdrawExtended`.
 
 ### Borrow
-For deposits there is `IUWBorrow` and `IUWBorrowExtended`. All strategies should try and implement `IUWBorrow`, if thats not possible or would have serious downsides it can implement the alternative 'IUWBorrowExtended`.
+For borrow there is `IUWBorrow` and `IUWBorrowExtended`. All strategies should try and implement `IUWBorrow`, if thats not possible or would have serious downsides it can implement the alternative 'IUWBorrowExtended`.
+
+### Repay
+For repayments there is `IUWRepay` and `IUWRepayExtended`. All strategies should try and implement `IUWRepay`, if thats not possible or would have serious downsides it can implement the alternative 'IUWRepayExtended`.
 
 ## Reports
 These interfaces expose view methods that may be implemented by strategies. These methods can expect to always be called through a RPC call and never in a transaction.
