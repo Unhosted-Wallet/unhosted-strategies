@@ -61,3 +61,4 @@ What a UI should do in this case is simulate a withdraw, it would then see that 
 - `INVALID_POSITION(bytes32 position)`
 - `UNAVAILABLE_UNTIL(bytes32 position, uint256 timestamp)`
 - `UNAVAILABLE(bytes32 id)`
+- `UNSUPPORTED_ASSET(address asset)`
