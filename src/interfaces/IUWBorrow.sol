@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 /// @notice interface for a borrow action.
 interface IUWBorrow {
-   
     /// @notice borrows using a strategy
     /// @param position specifies the position to borrow from, its up to the strategy implementation to decide what this refers to.
     /// @param asset the asset that is being borrowed from this strategy.

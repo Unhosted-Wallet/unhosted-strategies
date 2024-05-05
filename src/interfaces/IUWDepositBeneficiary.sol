@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 /// @notice interface for an deposit action with the ability to send it to a beneficiary.
 interface IUWDepositBeneficiary {
-
     /// @notice Deposits into a strategy
     /// @param position specifies the position to deposit into, its up to the strategy implementation to decide what this refers to.
     /// @param asset the asset that is being deposited into this strategy.

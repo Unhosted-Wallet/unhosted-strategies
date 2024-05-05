@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 /// @notice interface for an deposit action.
 interface IUWDeposit {
-    /// @notice emits once a user interacts with a (likely) new position. Signals to the UI to keep track of this position. 
+    /// @notice emits once a user interacts with a (likely) new position. Signals to the UI to keep track of this position.
     event TrackPosition(address indexed strategy, address indexed account, address asset);
 
     /// @notice Deposits into a strategy

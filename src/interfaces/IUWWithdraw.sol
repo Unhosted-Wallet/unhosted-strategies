@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 /// @notice interface for a withdrawal action.
 interface IUWWithdraw {
-   
     /// @notice withdraws from a strategy
     /// @param position specifies the position to withdraw from, its up to the strategy implementation to decide what this refers to.
     /// @param asset the asset that is being withdrawn from this strategy.
