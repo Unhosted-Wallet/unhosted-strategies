@@ -71,8 +71,8 @@ contract UWLidoStrategy is IUWAssetsReport, IUWDebtReport, IUWDeposit, UWBaseStr
 
     /// @notice Reports on the amount of the users assets that are in this strategy.
     /// @param position the position to check.
-    /// @return a The assets of the position.
-    function assets(bytes32 position) external view returns (Asset[] memory a) {
+    /// @return assets of the position.
+    function assets(bytes32 position) external view returns (Asset[] memory) {
         // Tracks the amount of Ether that is the backing asset.
         uint256 _amount;
 
@@ -86,27 +86,26 @@ contract UWLidoStrategy is IUWAssetsReport, IUWDebtReport, IUWDeposit, UWBaseStr
             revert IUWErrors.INVALID_POSITION(position);
         }
 
-        a = new Asset[](1);
-        a[0] = Asset({asset: UWConstants.NATIVE_ASSET, amount: _amount});
+        Asset[] memory _assets = new Asset[](1);
+        _assets[0] = Asset({asset: UWConstants.NATIVE_ASSET, amount: _amount});
+        return _assets;
     }
 
     /// @notice Reports on the amount debt the user has to this strategy.
     /// @param position the position to check.
-    /// @return a The debt assets of the position.
-    function debt(bytes32 position) external view returns (Asset[] memory a) {
+    /// @return debt assets of the position.
+    function debt(bytes32 position) external view returns (Asset[] memory) {
         // Tracks the amount of token debt.
-        uint256 _amount;
+        address asset = address(uint160(uint256(position)));
 
-        if (address(uint160(uint256(position))) == address(LIDO)) {
-            _amount = LIDO.balanceOf(address(this));
-        } else if (address(uint160(uint256(position))) == address(wstETH)) {
-            _amount = wstETH.balanceOf(address(this));
-        } else {
+        // Check that the position is one of the two available options.
+        if (asset != address(LIDO) && asset != address(wstETH)) {
             revert IUWErrors.INVALID_POSITION(position);
         }
 
-        a = new Asset[](1);
-        a[0] = Asset({asset: address(uint160(uint256(position))), amount: _amount});
+        Asset[] memory _assets = new Asset[](1);
+        _assets[0] = Asset({asset: asset, amount: IERC20(asset).balanceOf(address(this))});
+        return _assets;
     }
 
     /// @dev See {IERC165-supportsInterface}.
