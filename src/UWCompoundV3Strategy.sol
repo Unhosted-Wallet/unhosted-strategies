@@ -24,34 +24,36 @@ interface IComet {
         uint128 supplyCap;
     }
 
-    function supply(address asset, uint amount) external;
-    function supplyTo(address dst, address asset, uint amount) external;
-    function withdrawTo(address to, address asset, uint amount) external;
+    function supply(address asset, uint256 amount) external;
+    function supplyTo(address dst, address asset, uint256 amount) external;
+    function withdrawTo(address to, address asset, uint256 amount) external;
     function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
     function collateralBalanceOf(address account, address asset) external view returns (uint128);
 }
 
-interface wETH is IERC20 {
-    function withdraw(uint wad) external;
+interface WrappedETH is IERC20 {
+    function withdraw(uint256 wad) external;
     function deposit() external payable;
 }
 
 contract UWCompoundV3Strategy is IUWDeposit, IUWDepositBeneficiary, IUWBorrow, UWBaseStrategy {
-    wETH immutable internal WETH;
+    WrappedETH internal immutable WETH;
 
-    constructor(wETH _weth) {
+    constructor(WrappedETH _weth) {
         WETH = _weth;
     }
 
+    receive() external payable {}
+
     function deposit(bytes32 position, address asset, uint256 amount) external payable override {
-       depositTo(position, asset, amount, address(this)); 
+        depositTo(position, asset, amount, address(this));
     }
 
     function depositTo(bytes32 position, address asset, uint256 amount, address beneficiary) public payable {
         IComet _comet = IComet(address(uint160(uint256(position))));
 
-        // Handle the native asset and normalize it. 
-        if(asset == UWConstants.NATIVE_ASSET){
+        // Handle the native asset and normalize it.
+        if (asset == UWConstants.NATIVE_ASSET) {
             // Wrap ETH
             WETH.deposit{value: amount}();
             // Continue as normal but set the token to be used to WETH.
@@ -66,22 +68,20 @@ contract UWCompoundV3Strategy is IUWDeposit, IUWDepositBeneficiary, IUWBorrow, U
         _comet.supplyTo(beneficiary, asset, amount);
     }
 
-    function borrow(bytes32 position, address asset, uint256 amount) external override {
-       borrowTo(position, asset, amount, address(this));
+    function borrow(bytes32 position, address asset, uint256 amount) public override {
+        borrowTo(position, asset, amount, address(this));
     }
 
     function borrowTo(bytes32 position, address asset, uint256 amount, address beneficiary) public override {
         // TODO: Call Compound configurator to check if the amount is within bounds.
         IComet _comet = IComet(address(uint160(uint256(position))));
-        // If the asset we are borrowing is an ERC20 we can exit early. 
+        // If the asset we are borrowing is an ERC20 we can exit early.
         if (asset != UWConstants.NATIVE_ASSET) return _comet.withdrawTo(beneficiary, asset, amount);
         // Borrow WETH.
         _comet.withdrawTo(address(this), address(WETH), amount);
         // Unwrap thw WETH.
         WETH.withdraw(amount);
         // Send it to the beneficiary if we are not the beneficiary.
-        if(beneficiary != address(this)) WETH.transfer(beneficiary, amount);
+        if (beneficiary != address(this)) WETH.transfer(beneficiary, amount);
     }
-    
-    receive() external payable {}
 }

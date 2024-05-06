@@ -26,7 +26,7 @@ contract CompoundStrategyTest is Test {
 
         vm.deal(address(strategy), amount);
         strategy.deposit(bytes32(uint256(uint160(address(COMET)))), UWConstants.NATIVE_ASSET, amount);
-        
+
         // Assert that the new colleteral is the amount deposited.
         assertEq(COMET.collateralBalanceOf(address(strategy), address(WETH)), amount);
     }
@@ -37,7 +37,7 @@ contract CompoundStrategyTest is Test {
 
         vm.deal(address(strategy), deposit);
         strategy.deposit(bytes32(uint256(uint160(address(COMET)))), UWConstants.NATIVE_ASSET, deposit);
-        
+
         // Assert that the new colleteral is the amount deposited.
         assertEq(COMET.collateralBalanceOf(address(strategy), address(WETH)), deposit);
 
