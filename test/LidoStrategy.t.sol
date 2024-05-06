@@ -20,14 +20,34 @@ contract LidoStrategyTest is Test {
         strategy = new UWLidoStrategy(LIDO, wstETH, referral);
     }
 
-    function testDeposit() public {
-        vm.deal(address(strategy), 10 ether);
-        strategy.deposit(bytes32(uint256(uint160(address(LIDO)))), UWConstants.NATIVE_ASSET, 9 ether);
+    function testDeposit(uint256 amount) public {
+        amount = bound(amount, 100 wei, 1000 ether);
+
+        vm.deal(address(strategy), amount);
+        strategy.deposit(bytes32(uint256(uint160(address(LIDO)))), UWConstants.NATIVE_ASSET, amount);
+
+        // Check that the assets were updated accordingly
+        Asset[] memory assets = strategy.assets(bytes32(uint256(uint160(address(LIDO)))));
+        assertApproxEqAbs(assets[0].amount, amount, 100 wei);
+
+        // Check the debt.
+        Asset[] memory debts = strategy.debt(bytes32(uint256(uint160(address(LIDO)))));
+        assertEq(assets[0].amount, debts[0].amount);
     }
 
-    function testDepositForWstETH() public {
-        vm.deal(address(strategy), 10 ether);
-        strategy.deposit(bytes32(uint256(uint160(address(wstETH)))), UWConstants.NATIVE_ASSET, 9 ether);
+    function testDepositForWstETH(uint256 amount) public {
+        amount = bound(amount, 100 wei, 1000 ether);
+
+        vm.deal(address(strategy), amount);
+        strategy.deposit(bytes32(uint256(uint160(address(wstETH)))), UWConstants.NATIVE_ASSET, amount);
+
+        // Check that the assets were updated accordingly
+        Asset[] memory assets = strategy.assets(bytes32(uint256(uint160(address(wstETH)))));
+        assertApproxEqAbs(assets[0].amount, amount, 100 wei);
+
+        // Check the debt.
+        Asset[] memory debts = strategy.debt(bytes32(uint256(uint160(address(wstETH)))));
+        assertEq(assets[0].amount, LIDO.getPooledEthByShares(wstETH.getStETHByWstETH(debts[0].amount)));
     }
 
     function testDeposit_amountBelowBound_reverts() public {

@@ -4,22 +4,31 @@ pragma solidity ^0.8.12;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IUWDeposit} from "./interfaces/IUWDeposit.sol";
+import {IUWDebtReport} from "./interfaces/IUWDebtReport.sol";
+import {IUWAssetsReport, Asset} from "./interfaces/IUWAssetsReport.sol";
 import {UWBaseStrategy} from "./abstract/UWBaseStrategy.sol";
 import {UWConstants} from "./libraries/UWConstants.sol";
 import {IUWErrors} from "./interfaces/IUWErrors.sol";
 
 interface ILido is IERC20 {
     function submit(address _referral) external payable returns (uint256);
+    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
 }
 
 interface IwstETH is IERC20 {
     function wrap(uint256 _stETHAmount) external returns (uint256);
     function unwrap(uint256 _wstETHAmount) external returns (uint256);
+    function getStETHByWstETH(uint256 _wstETHAmount) external view returns (uint256);
 }
 
-contract UWLidoStrategy is IUWDeposit, UWBaseStrategy {
+contract UWLidoStrategy is IUWAssetsReport, IUWDebtReport, IUWDeposit, UWBaseStrategy {
+    /// @notice the LIDO proxy
     ILido internal immutable LIDO;
+
+    /// @notice the wrapped stETH token.
     IwstETH internal immutable wstETH;
+
+    /// @notice the refferal that gets used when submitting ether to LIDO.
     address internal immutable referral;
 
     constructor(ILido _lido, IwstETH _wstETH, address _referral) {
@@ -60,8 +69,49 @@ contract UWLidoStrategy is IUWDeposit, UWBaseStrategy {
         }
     }
 
+    /// @notice Reports on the amount of the users assets that are in this strategy.
+    /// @param position the position to check.
+    /// @return a The assets of the position.
+    function assets(bytes32 position) external view returns (Asset[] memory a) {
+        // Tracks the amount of Ether that is the backing asset.
+        uint256 _amount;
+
+        // If this is the stETH position
+        if (address(uint160(uint256(position))) == address(LIDO)) {
+            _amount = LIDO.balanceOf(address(this));
+            // If this is the wstETH position.
+        } else if (address(uint160(uint256(position))) == address(wstETH)) {
+            _amount = LIDO.getPooledEthByShares(wstETH.getStETHByWstETH(wstETH.balanceOf(address(this))));
+        } else {
+            revert IUWErrors.INVALID_POSITION(position);
+        }
+
+        a = new Asset[](1);
+        a[0] = Asset({asset: UWConstants.NATIVE_ASSET, amount: _amount});
+    }
+
+    /// @notice Reports on the amount debt the user has to this strategy.
+    /// @param position the position to check.
+    /// @return a The debt assets of the position.
+    function debt(bytes32 position) external view returns (Asset[] memory a) {
+        // Tracks the amount of token debt.
+        uint256 _amount;
+
+        if (address(uint160(uint256(position))) == address(LIDO)) {
+            _amount = LIDO.balanceOf(address(this));
+        } else if (address(uint160(uint256(position))) == address(wstETH)) {
+            _amount = wstETH.balanceOf(address(this));
+        } else {
+            revert IUWErrors.INVALID_POSITION(position);
+        }
+
+        a = new Asset[](1);
+        a[0] = Asset({asset: address(uint160(uint256(position))), amount: _amount});
+    }
+
     /// @dev See {IERC165-supportsInterface}.
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IUWDeposit).interfaceId || UWBaseStrategy.supportsInterface(interfaceId);
+        return interfaceId == type(IUWDeposit).interfaceId || interfaceId == type(IUWAssetsReport).interfaceId
+            || interfaceId == type(IUWDebtReport).interfaceId || UWBaseStrategy.supportsInterface(interfaceId);
     }
 }
