@@ -91,20 +91,20 @@ contract UWLidoStrategy is IUWAssetsReport, IUWDebtReport, IUWDeposit, UWBaseStr
         return _assets;
     }
 
-    /// @notice Reports on the amount debt the user has to this strategy.
+    /// @notice Reports on the debt the user has to this strategy (and position).
     /// @param position the position to check.
     /// @return debt assets of the position.
     function debt(bytes32 position) external view returns (Asset[] memory) {
-        // Tracks the amount of token debt.
-        address asset = address(uint160(uint256(position)));
+        // Tracks the position.
+        address _position = address(uint160(uint256(position)));
 
         // Check that the position is one of the two available options.
-        if (asset != address(LIDO) && asset != address(wstETH)) {
+        if (_position  != address(LIDO) && _position != address(wstETH)) {
             revert IUWErrors.INVALID_POSITION(position);
         }
 
         Asset[] memory _assets = new Asset[](1);
-        _assets[0] = Asset({asset: asset, amount: IERC20(asset).balanceOf(address(this))});
+        _assets[0] = Asset({asset: _position, amount: IERC20(_position).balanceOf(address(this))});
         return _assets;
     }
 
