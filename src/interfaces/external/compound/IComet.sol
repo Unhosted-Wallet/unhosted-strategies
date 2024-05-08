@@ -54,4 +54,3 @@ interface IComet {
     function userCollateral(address user, address collateral) external view returns (UserCollateral memory);
     function numAssets() external view returns (uint8);
 }
-

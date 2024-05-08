@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CometHelpers} from "./helpers/CometHelpers.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {LibBit} from "solady/utils/LibBit.sol";
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IComet} from "./interfaces/external/compound/IComet.sol";
 import {WrappedETH} from "./interfaces/external/common/WrappedETH.sol";
 
@@ -25,6 +27,8 @@ contract UWCompoundV3Strategy is
     IUWWithdraw,
     IUWBorrow,
     IUWRepay,
+    IUWAssetsReport,
+    IUWDebtReport,
     IUWDebtHealthReport,
     UWBaseStrategy,
     CometHelpers
@@ -135,6 +139,51 @@ contract UWCompoundV3Strategy is
     // ╰─ External & Public Functions ────────────────────────────────────╯
 
     // ╭─ View Functions ─────────────────────────────────────────────────╮
+    /// @notice Reports on the amount of the users assets that are in this strategy.
+    /// @param position the position to check.
+    /// @return _assets of the position.
+    function assets(bytes32 position) external view returns (Asset[] memory _assets) {
+        IComet _comet = IComet(address(uint160(uint256(position))));
+        IComet.UserBasic memory _ub = _comet.userBasic(address(this));
+
+        // Count the number of assets that we have in this comet.
+        uint256 _assetsIn = _ub.assetsIn;
+        uint8 _na = uint8(LibBit.popCount(_assetsIn));
+        // Size the array accordingly.
+        _assets = new Asset[](_na);
+
+        for (uint8 _i; _i < _na; _i++) {
+            // Find the index of an asset we have in this comet.
+            uint8 _assetIndex = uint8(LibBit.ffs(_assetsIn));
+            // Flip it to zero so we don't check the same asset multiple times.
+            _assetsIn = _assetsIn & ~(1 << _assetIndex);
+            // Get the asset information and balance and add it to our array of assets.
+            IComet.AssetInfo memory _asset = _comet.getAssetInfo(_assetIndex);
+            _assets[_i] = Asset({asset: _asset.asset, amount: _comet.collateralBalanceOf(address(this), _asset.asset)});
+        }
+    }
+
+    /// @notice Reports on the amount debt the user has to this strategy.
+    /// @param position the position to check.
+    /// @return _assets assets of the position.
+    function debt(bytes32 position) external view returns (Asset[] memory _assets) {
+        IComet _comet = IComet(address(uint160(uint256(position))));
+
+        // In compound the only token that can be debt is the baseasset.
+        uint256 _borrowBalance = _comet.borrowBalanceOf(address(this));
+
+        // Only add the base token if there is debt.
+        if (_borrowBalance > 0) {
+            _assets = new Asset[](1);
+            _assets[0] = Asset({asset: _comet.baseToken(), amount: _borrowBalance});
+        }
+    }
+
+    /// @notice Reports the health of a position.
+    /// @param position the position to check.
+    /// @return current an amount that represents the current debt.
+    /// @return max an amount at (or above) its no longer possible to take out additional debt against this position.
+    /// @return liquidatable an amount at which the position is at risk of being liquidated.
     function debtHealth(bytes32 position) external view returns (uint256, uint256, uint256) {
         IComet _comet = IComet(address(uint160(uint256(position))));
         IComet.UserBasic memory _ub = _comet.userBasic(address(this));
@@ -165,7 +214,8 @@ contract UWCompoundV3Strategy is
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IUWDeposit).interfaceId || interfaceId == type(IUWDepositBeneficiary).interfaceId
             || interfaceId == type(IUWWithdraw).interfaceId || interfaceId == type(IUWBorrow).interfaceId
-            || interfaceId == type(IUWRepay).interfaceId || interfaceId == type(IUWDebtHealthReport).interfaceId
+            || interfaceId == type(IUWRepay).interfaceId || interfaceId == type(IUWAssetsReport).interfaceId
+            || interfaceId == type(IUWDebtReport).interfaceId || interfaceId == type(IUWDebtHealthReport).interfaceId
             || UWBaseStrategy.supportsInterface(interfaceId);
     }
     // ╰─ View Functions ─────────────────────────────────────────────────╯
@@ -182,8 +232,7 @@ contract UWCompoundV3Strategy is
 
         // Approve the asset to be deposited.
         // TODO: Handle the max uint256 scenario.
-        // TODO: Use ForceApprove
-        IERC20(_asset).approve(address(_comet), _amount);
+        SafeTransferLib.safeApproveWithRetry(_asset, address(_comet), _amount);
 
         // Perform the deposit.
         _comet.supplyTo(_beneficiary, _asset, _amount);
@@ -200,8 +249,7 @@ contract UWCompoundV3Strategy is
         WETH.withdraw(_amount);
 
         // Send it to the beneficiary if we are not the beneficiary.
-        // Fix: This should transfer the native asset, not WETH.
-        if (_beneficiary != address(this))  WETH.transfer(_beneficiary, _amount);
+        if (_beneficiary != address(this)) SafeTransferLib.safeTransferETH(_beneficiary, _amount);
     }
     // ╰─ Internal Functions ─────────────────────────────────────────────╯
 }

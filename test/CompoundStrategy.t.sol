@@ -34,6 +34,9 @@ contract CompoundStrategyTest is Test {
         // Assert that the new colleteral is the amount deposited.
         // assertEq(COMET.collateralBalanceOf(address(strategy), address(WETH)), amount);
         strategy.debtHealth(bytes32(uint256(uint160(address(WETH_COMET)))));
+
+        strategy.assets(bytes32(uint256(uint160(address(WETH_COMET)))));
+        strategy.debt(bytes32(uint256(uint160(address(WETH_COMET)))));
     }
 
     function testDepositNativeBorrowUSDC() public {
@@ -45,9 +48,12 @@ contract CompoundStrategyTest is Test {
 
         // Assert that the new colleteral is the amount deposited.
         assertEq(COMET.collateralBalanceOf(address(strategy), address(WETH)), deposit);
+        address wbtc = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+        deal(address(wbtc), address(strategy), 1 ether);
+        strategy.deposit(bytes32(uint256(uint160(address(COMET)))), wbtc, 100_000);
 
         strategy.borrow(bytes32(uint256(uint160(address(COMET)))), address(USDC), borrow);
-
-        strategy.debtHealth(bytes32(uint256(uint160(address(COMET)))));
+        strategy.assets(bytes32(uint256(uint160(address(COMET)))));
+        // strategy.debtHealth(bytes32(uint256(uint160(address(COMET)))));
     }
 }
