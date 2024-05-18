@@ -26,12 +26,20 @@ abstract contract UWBaseStrategy is ERC165, IUWMetadata {
     }
 
     /// @dev See {IERC165-supportsInterface}.
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IUWMetadata).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override returns (bool) {
+        return
+            interfaceId == type(IUWMetadata).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
-    function _balanceOf(address _asset, address _account) internal view returns (uint256) {
-        if (_asset == UWConstants.NATIVE_ASSET) return address(_account).balance;
+    function _balanceOf(
+        address _asset,
+        address _account
+    ) internal view returns (uint256) {
+        if (_asset == UWConstants.NATIVE_ASSET)
+            return address(_account).balance;
         return IERC20(_asset).balanceOf(_account);
     }
 }

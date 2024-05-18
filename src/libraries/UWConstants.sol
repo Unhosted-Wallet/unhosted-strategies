@@ -6,5 +6,6 @@ library UWConstants {
     bytes32 internal constant SINGLE_POSITION = bytes32(uint256(1));
 
     /// @notice The address that represents the native asset of the chain.
-    address internal constant NATIVE_ASSET = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    address internal constant NATIVE_ASSET =
+        address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 }

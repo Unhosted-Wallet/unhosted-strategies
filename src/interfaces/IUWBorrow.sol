@@ -14,5 +14,10 @@ interface IUWBorrow {
     /// @param asset the asset that is being borrowed from this strategy.
     /// @param amount the amount of the asset to borrow.
     /// @param beneficiary recipient of the borrowed asset.
-    function borrowTo(bytes32 position, address asset, uint256 amount, address beneficiary) external;
+    function borrowTo(
+        bytes32 position,
+        address asset,
+        uint256 amount,
+        address beneficiary
+    ) external;
 }

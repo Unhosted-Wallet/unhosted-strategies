@@ -41,9 +41,14 @@ interface IComet {
     function supplyTo(address dst, address asset, uint256 amount) external;
     function withdrawTo(address to, address asset, uint256 amount) external;
     function getAssetInfo(uint8 i) external view returns (AssetInfo memory);
-    function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
+    function getAssetInfoByAddress(
+        address asset
+    ) external view returns (AssetInfo memory);
     function getPrice(address feed) external view returns (uint256);
-    function collateralBalanceOf(address account, address asset) external view returns (uint128);
+    function collateralBalanceOf(
+        address account,
+        address asset
+    ) external view returns (uint128);
     function baseToken() external view returns (address);
     function baseScale() external view returns (uint256);
     function baseTokenPriceFeed() external view returns (address);
@@ -51,6 +56,9 @@ interface IComet {
     function borrowBalanceOf(address account) external view returns (uint256);
     function totalsBasic() external view returns (TotalsBasic memory);
     function userBasic(address user) external view returns (UserBasic memory);
-    function userCollateral(address user, address collateral) external view returns (UserCollateral memory);
+    function userCollateral(
+        address user,
+        address collateral
+    ) external view returns (UserCollateral memory);
     function numAssets() external view returns (uint8);
 }

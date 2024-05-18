@@ -49,7 +49,11 @@ contract UWCompoundV3Strategy is
     /// @param position the comet to use.
     /// @param asset the asset to deposit.
     /// @param amount the amount of the asset to deposit.
-    function deposit(bytes32 position, address asset, uint256 amount) external payable override {
+    function deposit(
+        bytes32 position,
+        address asset,
+        uint256 amount
+    ) external payable override {
         IComet _comet = IComet(address(uint160(uint256(position))));
         _depositTo(_comet, asset, amount, address(this));
     }
@@ -59,7 +63,12 @@ contract UWCompoundV3Strategy is
     /// @param asset the asset to deposit.
     /// @param amount the amount of the asset to deposit.
     /// @param beneficiary the address to perform the deposit for.
-    function depositTo(bytes32 position, address asset, uint256 amount, address beneficiary) external payable {
+    function depositTo(
+        bytes32 position,
+        address asset,
+        uint256 amount,
+        address beneficiary
+    ) external payable {
         IComet _comet = IComet(address(uint160(uint256(position))));
         _depositTo(_comet, asset, amount, beneficiary);
     }
@@ -68,7 +77,11 @@ contract UWCompoundV3Strategy is
     /// @param position the comet to use.
     /// @param asset the asset to withdraw.
     /// @param amount the amount of the asset to withdraw.
-    function withdraw(bytes32 position, address asset, uint256 amount) external override {
+    function withdraw(
+        bytes32 position,
+        address asset,
+        uint256 amount
+    ) external override {
         IComet _comet = IComet(address(uint160(uint256(position))));
         _withdrawTo(_comet, asset, amount, address(this));
     }
@@ -78,7 +91,12 @@ contract UWCompoundV3Strategy is
     /// @param asset the asset to withdraw.
     /// @param amount the amount of the asset to withdraw.
     /// @param beneficiary the recipient of the withdrawn assets.
-    function withdrawTo(bytes32 position, address asset, uint256 amount, address beneficiary) external override {
+    function withdrawTo(
+        bytes32 position,
+        address asset,
+        uint256 amount,
+        address beneficiary
+    ) external override {
         IComet _comet = IComet(address(uint160(uint256(position))));
         _withdrawTo(_comet, asset, amount, beneficiary);
     }
@@ -91,7 +109,10 @@ contract UWCompoundV3Strategy is
         IComet _comet = IComet(address(uint160(uint256(position))));
 
         // We check that this asset is the base asset, which means this is likely a repayment.
-        if (_comet.baseToken() != (asset == UWConstants.NATIVE_ASSET ? address(WETH) : asset)) {
+        if (
+            _comet.baseToken() !=
+            (asset == UWConstants.NATIVE_ASSET ? address(WETH) : asset)
+        ) {
             revert IUWErrors.UNSUPPORTED_ASSET(asset);
         }
 
@@ -100,7 +121,10 @@ contract UWCompoundV3Strategy is
             uint256 _balance = _balanceOf(asset, address(this));
             uint256 _borrowAmount = _comet.borrowBalanceOf(address(this));
             revert IUWErrors.ASSET_AMOUNT_OUT_OF_BOUNDS(
-                asset, 0, _borrowAmount < _balance ? _borrowAmount : _balance, amount
+                asset,
+                0,
+                _borrowAmount < _balance ? _borrowAmount : _balance,
+                amount
             );
         }
 
@@ -112,7 +136,11 @@ contract UWCompoundV3Strategy is
     /// @param position the comet to use.
     /// @param asset the base asset to borrow.
     /// @param amount the amount of the asset to borrow.
-    function borrow(bytes32 position, address asset, uint256 amount) external override {
+    function borrow(
+        bytes32 position,
+        address asset,
+        uint256 amount
+    ) external override {
         borrowTo(position, asset, amount, address(this));
     }
 
@@ -121,17 +149,30 @@ contract UWCompoundV3Strategy is
     /// @param asset the base asset to borrow.
     /// @param amount the amount of the asset to borrow.
     /// @param beneficiary the recipient of the borrowed assets.
-    function borrowTo(bytes32 position, address asset, uint256 amount, address beneficiary) public override {
+    function borrowTo(
+        bytes32 position,
+        address asset,
+        uint256 amount,
+        address beneficiary
+    ) public override {
         IComet _comet = IComet(address(uint160(uint256(position))));
 
         // We check that the comet supports the asset the user is trying to borrow.
-        if (_comet.baseToken() != (asset == UWConstants.NATIVE_ASSET ? address(WETH) : asset)) {
+        if (
+            _comet.baseToken() !=
+            (asset == UWConstants.NATIVE_ASSET ? address(WETH) : asset)
+        ) {
             revert IUWErrors.UNSUPPORTED_ASSET(asset);
         }
 
         // Check that the borrow is above the min borrow.
         if (_comet.baseBorrowMin() > amount) {
-            revert IUWErrors.ASSET_AMOUNT_OUT_OF_BOUNDS(asset, _comet.baseBorrowMin(), type(uint256).max, amount);
+            revert IUWErrors.ASSET_AMOUNT_OUT_OF_BOUNDS(
+                asset,
+                _comet.baseBorrowMin(),
+                type(uint256).max,
+                amount
+            );
         }
 
         _withdrawTo(_comet, asset, amount, beneficiary);
@@ -142,7 +183,9 @@ contract UWCompoundV3Strategy is
     /// @notice Reports on the amount of the users assets that are in this strategy.
     /// @param position the position to check.
     /// @return _assets of the position.
-    function assets(bytes32 position) external view returns (Asset[] memory _assets) {
+    function assets(
+        bytes32 position
+    ) external view returns (Asset[] memory _assets) {
         IComet _comet = IComet(address(uint160(uint256(position))));
         IComet.UserBasic memory _ub = _comet.userBasic(address(this));
 
@@ -159,14 +202,19 @@ contract UWCompoundV3Strategy is
             _assetsIn = _assetsIn & ~(1 << _assetIndex);
             // Get the asset information and balance and add it to our array of assets.
             IComet.AssetInfo memory _asset = _comet.getAssetInfo(_assetIndex);
-            _assets[_i] = Asset({asset: _asset.asset, amount: _comet.collateralBalanceOf(address(this), _asset.asset)});
+            _assets[_i] = Asset({
+                asset: _asset.asset,
+                amount: _comet.collateralBalanceOf(address(this), _asset.asset)
+            });
         }
     }
 
     /// @notice Reports on the amount debt the user has to this strategy.
     /// @param position the position to check.
     /// @return _assets assets of the position.
-    function debt(bytes32 position) external view returns (Asset[] memory _assets) {
+    function debt(
+        bytes32 position
+    ) external view returns (Asset[] memory _assets) {
         IComet _comet = IComet(address(uint160(uint256(position))));
 
         // In compound the only token that can be debt is the baseasset.
@@ -175,7 +223,10 @@ contract UWCompoundV3Strategy is
         // Only add the base token if there is debt.
         if (_borrowBalance > 0) {
             _assets = new Asset[](1);
-            _assets[0] = Asset({asset: _comet.baseToken(), amount: _borrowBalance});
+            _assets[0] = Asset({
+                asset: _comet.baseToken(),
+                amount: _borrowBalance
+            });
         }
     }
 
@@ -184,13 +235,19 @@ contract UWCompoundV3Strategy is
     /// @return current an amount that represents the current debt.
     /// @return max an amount at (or above) its no longer possible to take out additional debt against this position.
     /// @return liquidatable an amount at which the position is at risk of being liquidated.
-    function debtHealth(bytes32 position) external view returns (uint256, uint256, uint256) {
+    function debtHealth(
+        bytes32 position
+    ) external view returns (uint256, uint256, uint256) {
         IComet _comet = IComet(address(uint160(uint256(position))));
         IComet.UserBasic memory _ub = _comet.userBasic(address(this));
         IComet.TotalsBasic memory _tb = _comet.totalsBasic();
 
-        int256 liquidity = presentValue(_ub.principal, _tb.baseSupplyIndex, _tb.baseBorrowIndex)
-            * signed256(_comet.getPrice(_comet.baseTokenPriceFeed())) / int256(uint256(_comet.baseScale()));
+        int256 liquidity = (presentValue(
+            _ub.principal,
+            _tb.baseSupplyIndex,
+            _tb.baseBorrowIndex
+        ) * signed256(_comet.getPrice(_comet.baseTokenPriceFeed()))) /
+            int256(uint256(_comet.baseScale()));
 
         int256 borrowLiquidity = liquidity;
         int256 zeroPoint = liquidity * -1;
@@ -200,28 +257,50 @@ contract UWCompoundV3Strategy is
             // TODO: add `isInAsset` optimization.
             IComet.AssetInfo memory _asset = _comet.getAssetInfo(_i);
 
-            uint256 newAmount = _comet.collateralBalanceOf(address(this), _asset.asset)
-                * _comet.getPrice(_asset.priceFeed) / _asset.scale;
+            uint256 newAmount = (_comet.collateralBalanceOf(
+                address(this),
+                _asset.asset
+            ) * _comet.getPrice(_asset.priceFeed)) / _asset.scale;
 
-            liquidity += signed256(mulFactor(newAmount, _asset.liquidateCollateralFactor));
-            borrowLiquidity += signed256(mulFactor(newAmount, _asset.borrowCollateralFactor));
+            liquidity += signed256(
+                mulFactor(newAmount, _asset.liquidateCollateralFactor)
+            );
+            borrowLiquidity += signed256(
+                mulFactor(newAmount, _asset.borrowCollateralFactor)
+            );
         }
 
-        return (unsigned256(zeroPoint), unsigned256(zeroPoint + borrowLiquidity), unsigned256(zeroPoint + liquidity));
+        return (
+            unsigned256(zeroPoint),
+            unsigned256(zeroPoint + borrowLiquidity),
+            unsigned256(zeroPoint + liquidity)
+        );
     }
 
     /// @dev See {IERC165-supportsInterface}.
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IUWDeposit).interfaceId || interfaceId == type(IUWDepositBeneficiary).interfaceId
-            || interfaceId == type(IUWWithdraw).interfaceId || interfaceId == type(IUWBorrow).interfaceId
-            || interfaceId == type(IUWRepay).interfaceId || interfaceId == type(IUWAssetsReport).interfaceId
-            || interfaceId == type(IUWDebtReport).interfaceId || interfaceId == type(IUWDebtHealthReport).interfaceId
-            || UWBaseStrategy.supportsInterface(interfaceId);
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override returns (bool) {
+        return
+            interfaceId == type(IUWDeposit).interfaceId ||
+            interfaceId == type(IUWDepositBeneficiary).interfaceId ||
+            interfaceId == type(IUWWithdraw).interfaceId ||
+            interfaceId == type(IUWBorrow).interfaceId ||
+            interfaceId == type(IUWRepay).interfaceId ||
+            interfaceId == type(IUWAssetsReport).interfaceId ||
+            interfaceId == type(IUWDebtReport).interfaceId ||
+            interfaceId == type(IUWDebtHealthReport).interfaceId ||
+            UWBaseStrategy.supportsInterface(interfaceId);
     }
     // ╰─ View Functions ─────────────────────────────────────────────────╯
 
     // ╭─ Internal Functions ─────────────────────────────────────────────╮
-    function _depositTo(IComet _comet, address _asset, uint256 _amount, address _beneficiary) internal {
+    function _depositTo(
+        IComet _comet,
+        address _asset,
+        uint256 _amount,
+        address _beneficiary
+    ) internal {
         // Handle the native asset and normalize it.
         if (_asset == UWConstants.NATIVE_ASSET) {
             // Wrap ETH
@@ -238,9 +317,15 @@ contract UWCompoundV3Strategy is
         _comet.supplyTo(_beneficiary, _asset, _amount);
     }
 
-    function _withdrawTo(IComet _comet, address _asset, uint256 _amount, address _beneficiary) internal {
+    function _withdrawTo(
+        IComet _comet,
+        address _asset,
+        uint256 _amount,
+        address _beneficiary
+    ) internal {
         // If the asset we are borrowing is an ERC20 we can exit early.
-        if (_asset != UWConstants.NATIVE_ASSET) return _comet.withdrawTo(_beneficiary, _asset, _amount);
+        if (_asset != UWConstants.NATIVE_ASSET)
+            return _comet.withdrawTo(_beneficiary, _asset, _amount);
 
         // Borrow WETH.
         _comet.withdrawTo(address(this), address(WETH), _amount);
@@ -249,7 +334,8 @@ contract UWCompoundV3Strategy is
         WETH.withdraw(_amount);
 
         // Send it to the beneficiary if we are not the beneficiary.
-        if (_beneficiary != address(this)) SafeTransferLib.safeTransferETH(_beneficiary, _amount);
+        if (_beneficiary != address(this))
+            SafeTransferLib.safeTransferETH(_beneficiary, _amount);
     }
     // ╰─ Internal Functions ─────────────────────────────────────────────╯
 }

@@ -8,5 +8,10 @@ interface IUWDepositBeneficiary {
     /// @param asset the asset that is being deposited into this strategy.
     /// @param amount the amount of the asset to deposit.
     /// @param beneficiary recipient of the deposit.
-    function depositTo(bytes32 position, address asset, uint256 amount, address beneficiary) external payable;
+    function depositTo(
+        bytes32 position,
+        address asset,
+        uint256 amount,
+        address beneficiary
+    ) external payable;
 }
