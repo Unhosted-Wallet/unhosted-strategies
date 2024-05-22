@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity =0.8.20;
 
 import {CometHelpers} from "./helpers/CometHelpers.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
@@ -101,7 +101,7 @@ contract UWCompoundV3Strategy is
         _withdrawTo(_comet, asset, amount, beneficiary);
     }
 
-    /// @notice Repay a basetoken borrow for a compound comet.
+    /// @notice Repay the base token for a compound comet.
     /// @param position the comet to use.
     /// @param asset the base asset to repay.
     /// @param amount the amount of the asset to repay.
@@ -217,7 +217,7 @@ contract UWCompoundV3Strategy is
     ) external view returns (Asset[] memory _assets) {
         IComet _comet = IComet(address(uint160(uint256(position))));
 
-        // In compound the only token that can be debt is the baseasset.
+        // In compound the only token that can be debt is the base asset.
         uint256 _borrowBalance = _comet.borrowBalanceOf(address(this));
 
         // Only add the base token if there is debt.
@@ -330,7 +330,7 @@ contract UWCompoundV3Strategy is
         // Borrow WETH.
         _comet.withdrawTo(address(this), address(WETH), _amount);
 
-        // Unwrap thw WETH.
+        // Unwrap the WETH.
         WETH.withdraw(_amount);
 
         // Send it to the beneficiary if we are not the beneficiary.
