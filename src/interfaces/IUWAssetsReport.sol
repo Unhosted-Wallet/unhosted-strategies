@@ -8,5 +8,7 @@ interface IUWAssetsReport {
     /// @notice Reports the asset value of a position.
     /// @param position the position to check.
     /// @return assets the assets that are in this position.
-    function assets(bytes32 position) external view returns (Asset[] memory assets);
+    function assets(
+        bytes32 position
+    ) external view returns (Asset[] memory assets);
 }
