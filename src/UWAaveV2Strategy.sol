@@ -161,22 +161,30 @@ contract UWAaveV2Strategy is
     function assets(
         bytes32 position
     ) external view returns (Asset[] memory _assets) {
-        // InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
-        // ILendingPoolV2 _pool = ILendingPoolV2(ADDRESSES.getLendingPool());
-
+        // TODO: this loads symbols as well, which we do not need.
         IProtocolDataProvider.TokenData[] memory _reserveAssets = DATA_PROVIDER
             .getAllATokens();
 
+        // Reserve enough memory for all the assets.
         _assets = new Asset[](_reserveAssets.length);
+
+        // Keep track of the number of assets actually deposited.
+        uint256 _n;
         for (uint256 _i; _i < _reserveAssets.length; _i++) {
             uint256 _balance = IERC20(_reserveAssets[_i].tokenAddress)
                 .balanceOf(address(this));
 
-            if (_balance != 0)
-                _assets[_i] = Asset({
+            if (_balance != 0) {
+                _assets[_n++] = Asset({
                     asset: _reserveAssets[_i].tokenAddress,
                     amount: _balance
                 });
+            }
+        }
+
+        // Resize the assets to only contain filled asset structs.
+        assembly {
+            mstore(_assets, _n) // _assets.length := _n
         }
 
         return _assets;
@@ -187,7 +195,73 @@ contract UWAaveV2Strategy is
     /// @return _assets assets of the position.
     function debt(
         bytes32 position
-    ) external view returns (Asset[] memory _assets) {}
+    ) external view returns (Asset[] memory _assets) {
+        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
+
+        // TODO: this loads symbols as well, which we do not need.
+        IProtocolDataProvider.TokenData[] memory _reserveAssets = DATA_PROVIDER
+            .getAllReservesTokens();
+
+        // Reserve enough memory for all the assets.
+        // Absolute worst case might be 2x the amount of assets due to 'aTokens'.
+        _assets = new Asset[](_reserveAssets.length * 2);
+
+        // Keep track of the number of assets actually deposited.
+        uint256 _n;
+
+        // TODO: Optimize gas usage
+        for (uint256 _i; _i < _reserveAssets.length; _i++) {
+            (
+                uint256 _currentATokenBalance,
+                uint256 _currentStableDebt,
+                uint256 _currentVariableDebt,
+                ,
+                ,
+                ,
+                ,
+                ,
+
+            ) = DATA_PROVIDER.getUserReserveData(
+                    _reserveAssets[_i].tokenAddress,
+                    address(this)
+                );
+
+            // One of the two modes has to include the 'aTokens', variable does not include them.
+            if (_mode == InterestRateMode.VARIABLE) {
+                if (_currentVariableDebt != 0) {
+                    _assets[_n++] = Asset({
+                        asset: _reserveAssets[_i].tokenAddress,
+                        amount: _currentVariableDebt
+                    });
+                }
+                continue;
+            }
+
+            if (_currentATokenBalance != 0) {
+                (address _aTokenAddress, , ) = DATA_PROVIDER
+                    .getReserveTokensAddresses(_reserveAssets[_i].tokenAddress);
+
+                _assets[_n++] = Asset({
+                    asset: _aTokenAddress,
+                    amount: _currentATokenBalance
+                });
+            }
+
+            if (_currentStableDebt != 0) {
+                _assets[_n++] = Asset({
+                    asset: _reserveAssets[_i].tokenAddress,
+                    amount: _currentStableDebt
+                });
+            }
+        }
+
+        // Resize the assets to only contain filled asset structs.
+        assembly {
+            mstore(_assets, _n) // _assets.length := _n
+        }
+
+        return _assets;
+    }
 
     /// @notice Reports the health of a position.
     /// @param position the position to check.

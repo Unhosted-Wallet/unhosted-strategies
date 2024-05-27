@@ -68,5 +68,6 @@ contract AaveStrategyTest is Test {
 
         strategy.debtHealth(bytes32(uint256(1)));
         strategy.assets(bytes32(uint256(1)));
+        strategy.debt(bytes32(uint256(0)));
     }
 }
