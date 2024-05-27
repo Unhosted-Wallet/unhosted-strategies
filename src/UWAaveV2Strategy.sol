@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {WrappedETH} from "./interfaces/external/common/WrappedETH.sol";
 import {ILendingPoolV2} from "./interfaces/external/aave/ILendingPoolV2.sol";
 import {ILendingPoolV2AddressesProvider} from "./interfaces/external/aave/ILendingPoolV2AddressesProvider.sol";
+import {IProtocolDataProvider} from "./interfaces/external/aave/IProtocolDataProvider.sol";
 
 import {IUWDeposit} from "./interfaces/IUWDeposit.sol";
 import {IUWDepositBeneficiary} from "./interfaces/IUWDepositBeneficiary.sol";
@@ -20,7 +21,7 @@ import {UWBaseStrategy} from "./abstract/UWBaseStrategy.sol";
 import {UWConstants} from "./libraries/UWConstants.sol";
 import {IUWErrors} from "./interfaces/IUWErrors.sol";
 
-contract UWCompoundV3Strategy is
+contract UWAaveV2Strategy is
     IUWDeposit,
     IUWDepositBeneficiary,
     IUWWithdraw,
@@ -37,18 +38,23 @@ contract UWCompoundV3Strategy is
     }
 
     // ╭─ Immutable Properties ───────────────────────────────────────────╮
+    IProtocolDataProvider public immutable DATA_PROVIDER;
+
     /// @notice provided the AaveV2 addresses to use
-    ILendingPoolV2AddressesProvider internal immutable ADDRESSES;
+    ILendingPoolV2AddressesProvider public immutable ADDRESSES;
 
     /// @notice referral code that gets used for actions where we can pass one.
-    uint16 internal immutable REFERRAL;
+    uint16 public immutable REFERRAL;
 
     /// @notice the implementation of wrapped ether to use.
-    WrappedETH internal immutable WETH;
+    WrappedETH public immutable WETH;
     // ╰─ Immutable Properties ───────────────────────────────────────────╯
 
-    constructor(ILendingPoolV2AddressesProvider _addresses, WrappedETH _weth) {
-        ADDRESSES = _addresses;
+    constructor(IProtocolDataProvider _dataProvider, WrappedETH _weth) {
+        DATA_PROVIDER = _dataProvider;
+        // We use the data provider to get the address provider, this way we minimize the chance of misconfiguration.
+        ADDRESSES = _dataProvider.ADDRESSES_PROVIDER();
+
         WETH = _weth;
 
         // TODO: check if we can get a code.
@@ -127,7 +133,10 @@ contract UWCompoundV3Strategy is
         bytes32 position,
         address asset,
         uint256 amount
-    ) external override {}
+    ) external override {
+        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
+        _borrowTo(_mode, asset, amount, address(this));
+    }
 
     /// @notice Borrow an asset from a compound comet.
     /// @param position the comet to use.
@@ -139,7 +148,10 @@ contract UWCompoundV3Strategy is
         address asset,
         uint256 amount,
         address beneficiary
-    ) public override {}
+    ) public override {
+        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
+        _borrowTo(_mode, asset, amount, beneficiary);
+    }
     // ╰─ External & Public Functions ────────────────────────────────────╯
 
     // ╭─ View Functions ─────────────────────────────────────────────────╮
@@ -148,7 +160,27 @@ contract UWCompoundV3Strategy is
     /// @return _assets of the position.
     function assets(
         bytes32 position
-    ) external view returns (Asset[] memory _assets) {}
+    ) external view returns (Asset[] memory _assets) {
+        // InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
+        // ILendingPoolV2 _pool = ILendingPoolV2(ADDRESSES.getLendingPool());
+
+        IProtocolDataProvider.TokenData[] memory _reserveAssets = DATA_PROVIDER
+            .getAllATokens();
+
+        _assets = new Asset[](_reserveAssets.length);
+        for (uint256 _i; _i < _reserveAssets.length; _i++) {
+            uint256 _balance = IERC20(_reserveAssets[_i].tokenAddress)
+                .balanceOf(address(this));
+
+            if (_balance != 0)
+                _assets[_i] = Asset({
+                    asset: _reserveAssets[_i].tokenAddress,
+                    amount: _balance
+                });
+        }
+
+        return _assets;
+    }
 
     /// @notice Reports on the amount debt the user has to this strategy.
     /// @param position the position to check.
@@ -164,7 +196,25 @@ contract UWCompoundV3Strategy is
     /// @return liquidatable an amount at which the position is at risk of being liquidated.
     function debtHealth(
         bytes32 position
-    ) external view returns (uint256, uint256, uint256) {}
+    ) external view returns (uint256, uint256, uint256) {
+        // Get the pool address from the registry.
+        ILendingPoolV2 _pool = ILendingPoolV2(ADDRESSES.getLendingPool());
+        (
+            uint256 _totalCollateralETH,
+            uint256 _totalDebtETH,
+            ,
+            uint256 _currentLiquidationThreshold,
+            uint256 _ltv,
+
+        ) = _pool.getUserAccountData(address(this));
+
+        return (
+            // Calculate the current percentage of usage.
+            (_totalDebtETH * 1e4) / _totalCollateralETH,
+            _ltv,
+            _currentLiquidationThreshold
+        );
+    }
 
     /// @dev See {IERC165-supportsInterface}.
     function supportsInterface(
@@ -222,7 +272,7 @@ contract UWCompoundV3Strategy is
                 _pool.borrow(
                     _asset,
                     _amount,
-                    uint256(_mode),
+                    uint256(_mode) + 1,
                     REFERRAL,
                     _beneficiary
                 );
@@ -231,7 +281,7 @@ contract UWCompoundV3Strategy is
         _pool.borrow(
             address(WETH),
             _amount,
-            uint256(_mode),
+            uint256(_mode) + 1,
             REFERRAL,
             address(this)
         );

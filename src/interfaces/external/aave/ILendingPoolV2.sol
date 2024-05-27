@@ -191,4 +191,6 @@ interface ILendingPoolV2 {
     function getUserConfiguration(
         address user
     ) external view returns (UserConfigurationMap memory);
+
+    function getReservesList() external view returns (address[] memory);
 }
