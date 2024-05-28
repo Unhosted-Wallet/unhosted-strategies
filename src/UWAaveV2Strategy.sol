@@ -72,7 +72,7 @@ contract UWAaveV2Strategy is
         bytes32 position,
         address asset,
         uint256 amount
-    ) external payable override {
+    ) external payable override onlySinglePosition(position) {
         _depositTo(asset, amount, address(this));
     }
 
@@ -86,7 +86,7 @@ contract UWAaveV2Strategy is
         address asset,
         uint256 amount,
         address beneficiary
-    ) external payable {
+    ) external payable onlySinglePosition(position) {
         _depositTo(asset, amount, address(beneficiary));
     }
 
@@ -98,7 +98,7 @@ contract UWAaveV2Strategy is
         bytes32 position,
         address asset,
         uint256 amount
-    ) external override {
+    ) external override onlySinglePosition(position) {
         _withdrawTo(asset, amount, address(this));
     }
 
@@ -112,7 +112,7 @@ contract UWAaveV2Strategy is
         address asset,
         uint256 amount,
         address beneficiary
-    ) external override {
+    ) external override onlySinglePosition(position) {
         _withdrawTo(asset, amount, beneficiary);
     }
 
@@ -120,7 +120,11 @@ contract UWAaveV2Strategy is
     /// @param position the comet to use.
     /// @param asset the base asset to repay.
     /// @param amount the amount of the asset to repay.
-    function repay(bytes32 position, address asset, uint256 amount) external {
+    function repay(
+        bytes32 position,
+        address asset,
+        uint256 amount
+    ) external onlySinglePosition(position) {
         InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
         _repayTo(_mode, asset, amount, address(this));
     }
@@ -133,7 +137,7 @@ contract UWAaveV2Strategy is
         bytes32 position,
         address asset,
         uint256 amount
-    ) external override {
+    ) external override onlySinglePosition(position) {
         InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
         _borrowTo(_mode, asset, amount, address(this));
     }
@@ -148,7 +152,7 @@ contract UWAaveV2Strategy is
         address asset,
         uint256 amount,
         address beneficiary
-    ) public override {
+    ) public override onlySinglePosition(position) {
         InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
         _borrowTo(_mode, asset, amount, beneficiary);
     }
