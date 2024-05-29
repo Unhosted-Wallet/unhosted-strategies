@@ -32,10 +32,10 @@ contract UWAaveV2Strategy is
     IUWDebtHealthReport,
     UWBaseStrategy
 {
-    enum InterestRateMode {
-        STABLE,
-        VARIABLE
-    }
+    // enum InterestRateMode {
+    //     STABLE,
+    //     VARIABLE
+    // }
 
     // ╭─ Immutable Properties ───────────────────────────────────────────╮
     IProtocolDataProvider public immutable DATA_PROVIDER;
@@ -125,8 +125,7 @@ contract UWAaveV2Strategy is
         address asset,
         uint256 amount
     ) external onlySinglePosition(position) {
-        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
-        _repayTo(_mode, asset, amount, address(this));
+        _repayTo(asset, amount, address(this));
     }
 
     /// @notice Borrow an asset from a compound comet.
@@ -138,8 +137,7 @@ contract UWAaveV2Strategy is
         address asset,
         uint256 amount
     ) external override onlySinglePosition(position) {
-        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
-        _borrowTo(_mode, asset, amount, address(this));
+        _borrowTo(asset, amount, address(this));
     }
 
     /// @notice Borrow an asset from a compound comet.
@@ -153,8 +151,7 @@ contract UWAaveV2Strategy is
         uint256 amount,
         address beneficiary
     ) public override onlySinglePosition(position) {
-        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
-        _borrowTo(_mode, asset, amount, beneficiary);
+        _borrowTo(asset, amount, beneficiary);
     }
     // ╰─ External & Public Functions ────────────────────────────────────╯
 
@@ -164,7 +161,12 @@ contract UWAaveV2Strategy is
     /// @return _assets of the position.
     function assets(
         bytes32 position
-    ) external view returns (Asset[] memory _assets) {
+    )
+        external
+        view
+        onlySinglePosition(position)
+        returns (Asset[] memory _assets)
+    {
         // TODO: this loads symbols as well, which we do not need.
         IProtocolDataProvider.TokenData[] memory _reserveAssets = DATA_PROVIDER
             .getAllATokens();
@@ -188,7 +190,7 @@ contract UWAaveV2Strategy is
 
         // Resize the assets to only contain filled asset structs.
         assembly {
-            mstore(_assets, _n) // _assets.length := _n
+            mstore(_assets, _n)
         }
 
         return _assets;
@@ -199,16 +201,18 @@ contract UWAaveV2Strategy is
     /// @return _assets assets of the position.
     function debt(
         bytes32 position
-    ) external view returns (Asset[] memory _assets) {
-        InterestRateMode _mode = InterestRateMode(uint8(uint256(position)));
-
+    )
+        external
+        view
+        onlySinglePosition(position)
+        returns (Asset[] memory _assets)
+    {
         // TODO: this loads symbols as well, which we do not need.
         IProtocolDataProvider.TokenData[] memory _reserveAssets = DATA_PROVIDER
             .getAllReservesTokens();
 
         // Reserve enough memory for all the assets.
-        // Absolute worst case might be 2x the amount of assets due to 'aTokens'.
-        _assets = new Asset[](_reserveAssets.length * 2);
+        _assets = new Asset[](_reserveAssets.length);
 
         // Keep track of the number of assets actually deposited.
         uint256 _n;
@@ -216,7 +220,7 @@ contract UWAaveV2Strategy is
         // TODO: Optimize gas usage
         for (uint256 _i; _i < _reserveAssets.length; _i++) {
             (
-                uint256 _currentATokenBalance,
+                ,
                 uint256 _currentStableDebt,
                 uint256 _currentVariableDebt,
                 ,
@@ -230,38 +234,21 @@ contract UWAaveV2Strategy is
                     address(this)
                 );
 
-            // One of the two modes has to include the 'aTokens', variable does not include them.
-            if (_mode == InterestRateMode.VARIABLE) {
-                if (_currentVariableDebt != 0) {
-                    _assets[_n++] = Asset({
-                        asset: _reserveAssets[_i].tokenAddress,
-                        amount: _currentVariableDebt
-                    });
-                }
-                continue;
-            }
-
-            if (_currentATokenBalance != 0) {
+            // Check if the user has any debt for this asset.
+            if (_currentVariableDebt != 0 || _currentStableDebt != 0) {
                 (address _aTokenAddress, , ) = DATA_PROVIDER
                     .getReserveTokensAddresses(_reserveAssets[_i].tokenAddress);
 
                 _assets[_n++] = Asset({
                     asset: _aTokenAddress,
-                    amount: _currentATokenBalance
-                });
-            }
-
-            if (_currentStableDebt != 0) {
-                _assets[_n++] = Asset({
-                    asset: _reserveAssets[_i].tokenAddress,
-                    amount: _currentStableDebt
+                    amount: _currentVariableDebt + _currentStableDebt
                 });
             }
         }
 
         // Resize the assets to only contain filled asset structs.
         assembly {
-            mstore(_assets, _n) // _assets.length := _n
+            mstore(_assets, _n)
         }
 
         return _assets;
@@ -274,7 +261,12 @@ contract UWAaveV2Strategy is
     /// @return liquidatable an amount at which the position is at risk of being liquidated.
     function debtHealth(
         bytes32 position
-    ) external view returns (uint256, uint256, uint256) {
+    )
+        external
+        view
+        onlySinglePosition(position)
+        returns (uint256, uint256, uint256)
+    {
         // Get the pool address from the registry.
         ILendingPoolV2 _pool = ILendingPoolV2(ADDRESSES.getLendingPool());
         (
@@ -324,7 +316,6 @@ contract UWAaveV2Strategy is
     }
 
     function _repayTo(
-        InterestRateMode _mode,
         address _asset,
         uint256 _amount,
         address _beneficiary
@@ -332,11 +323,44 @@ contract UWAaveV2Strategy is
         ILendingPoolV2 _pool;
         (_pool, _asset) = _preSendFlow(_asset, _amount);
 
-        _pool.repay(_asset, _amount, uint256(_mode), _beneficiary);
+        (
+            ,
+            uint256 _currentStableDebt,
+            uint256 _currentVariableDebt,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = DATA_PROVIDER.getUserReserveData(_asset, address(this));
+
+        if (_currentVariableDebt != 0) {
+            uint256 _repay = _amount > _currentVariableDebt
+                ? _currentVariableDebt
+                : _amount;
+
+            _amount = _amount - _repay;
+
+            _pool.repay(
+                _asset,
+                _repay,
+                uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
+                _beneficiary
+            );
+        }
+
+        if (_currentStableDebt != 0 && _amount != 0) {
+            _pool.repay(
+                _asset,
+                _amount,
+                uint256(ILendingPoolV2.InterestRateMode.STABLE),
+                _beneficiary
+            );
+        }
     }
 
     function _borrowTo(
-        InterestRateMode _mode,
         address _asset,
         uint256 _amount,
         address _beneficiary
@@ -350,7 +374,7 @@ contract UWAaveV2Strategy is
                 _pool.borrow(
                     _asset,
                     _amount,
-                    uint256(_mode) + 1,
+                    uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
                     REFERRAL,
                     _beneficiary
                 );
@@ -359,7 +383,7 @@ contract UWAaveV2Strategy is
         _pool.borrow(
             address(WETH),
             _amount,
-            uint256(_mode) + 1,
+            uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
             REFERRAL,
             address(this)
         );

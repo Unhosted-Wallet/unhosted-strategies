@@ -63,11 +63,11 @@ contract AaveStrategyTest is Test {
             bytes32(uint256(1)),
             // borrow wBTC token.
             address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
-            4_500_000
+            2_000_000
         );
 
         strategy.debtHealth(bytes32(uint256(1)));
         strategy.assets(bytes32(uint256(1)));
-        strategy.debt(bytes32(uint256(0)));
+        strategy.debt(bytes32(uint256(1)));
     }
 }
