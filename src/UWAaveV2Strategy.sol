@@ -32,11 +32,6 @@ contract UWAaveV2Strategy is
     IUWDebtHealthReport,
     UWBaseStrategy
 {
-    // enum InterestRateMode {
-    //     STABLE,
-    //     VARIABLE
-    // }
-
     // ╭─ Immutable Properties ───────────────────────────────────────────╮
     IProtocolDataProvider public immutable DATA_PROVIDER;
 
@@ -279,8 +274,10 @@ contract UWAaveV2Strategy is
         ) = _pool.getUserAccountData(address(this));
 
         return (
-            // Calculate the current percentage of usage.
-            (_totalDebtETH * 1e4) / _totalCollateralETH,
+            // Calculate the current percentage of usage if there is any.
+            _totalCollateralETH == 0
+                ? 0
+                : (_totalDebtETH * 1e4) / _totalCollateralETH,
             _ltv,
             _currentLiquidationThreshold
         );
@@ -312,7 +309,11 @@ contract UWAaveV2Strategy is
         ILendingPoolV2 _pool;
         (_pool, _asset) = _preSendFlow(_asset, _amount);
 
-        _pool.deposit(_asset, _amount, _beneficiary, REFERRAL);
+        try _pool.deposit(_asset, _amount, _beneficiary, REFERRAL) {} catch (
+            bytes memory _revert
+        ) {
+            _handleRevert(_revert, _asset, _amount);
+        }
     }
 
     function _repayTo(
@@ -340,23 +341,34 @@ contract UWAaveV2Strategy is
                 ? _currentVariableDebt
                 : _amount;
 
-            _amount = _amount - _repay;
+            // Can't underflow due to above check.
+            unchecked {
+                _amount = _amount - _repay;
+            }
 
-            _pool.repay(
-                _asset,
-                _repay,
-                uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
-                _beneficiary
-            );
+            try
+                _pool.repay(
+                    _asset,
+                    _repay,
+                    uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
+                    _beneficiary
+                )
+            {} catch (bytes memory _revert) {
+                _handleRevert(_revert, _asset, _amount);
+            }
         }
 
         if (_currentStableDebt != 0 && _amount != 0) {
-            _pool.repay(
-                _asset,
-                _amount,
-                uint256(ILendingPoolV2.InterestRateMode.STABLE),
-                _beneficiary
-            );
+            try
+                _pool.repay(
+                    _asset,
+                    _amount,
+                    uint256(ILendingPoolV2.InterestRateMode.STABLE),
+                    _beneficiary
+                )
+            {} catch (bytes memory _revert) {
+                _handleRevert(_revert, _asset, _amount);
+            }
         }
     }
 
@@ -369,24 +381,33 @@ contract UWAaveV2Strategy is
         ILendingPoolV2 _pool = ILendingPoolV2(ADDRESSES.getLendingPool());
 
         // If the asset we are withdrawing is an ERC20 we can exit early.
-        if (_asset != UWConstants.NATIVE_ASSET)
-            return
+        if (_asset != UWConstants.NATIVE_ASSET) {
+            try
                 _pool.borrow(
                     _asset,
                     _amount,
                     uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
                     REFERRAL,
                     _beneficiary
-                );
+                )
+            {} catch (bytes memory _revert) {
+                _handleRevert(_revert, _asset, _amount);
+            }
 
+            return;
+        }
         // Withdraw WETH to this address.
-        _pool.borrow(
-            address(WETH),
-            _amount,
-            uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
-            REFERRAL,
-            address(this)
-        );
+        try
+            _pool.borrow(
+                address(WETH),
+                _amount,
+                uint256(ILendingPoolV2.InterestRateMode.VARIABLE),
+                REFERRAL,
+                address(this)
+            )
+        {} catch (bytes memory _revert) {
+            _handleRevert(_revert, _asset, _amount);
+        }
 
         // Unwrap the WETH.
         WETH.withdraw(_amount);
@@ -406,12 +427,20 @@ contract UWAaveV2Strategy is
 
         // If the asset we are withdrawing is an ERC20 we can exit early.
         if (_asset != UWConstants.NATIVE_ASSET) {
-            _pool.withdraw(_asset, _amount, _beneficiary);
+            try _pool.withdraw(_asset, _amount, _beneficiary) {} catch (
+                bytes memory _revert
+            ) {
+                _handleRevert(_revert, _asset, _amount);
+            }
             return;
         }
 
         // Withdraw WETH to this address.
-        _pool.withdraw(address(WETH), _amount, address(this));
+        try _pool.withdraw(address(WETH), _amount, address(this)) {} catch (
+            bytes memory _revert
+        ) {
+            _handleRevert(_revert, _asset, _amount);
+        }
 
         // Unwrap the WETH.
         WETH.withdraw(_amount);
@@ -440,6 +469,53 @@ contract UWAaveV2Strategy is
         SafeTransferLib.safeApproveWithRetry(_asset, address(_pool), _amount);
 
         return (_pool, _asset);
+    }
+
+    function _handleRevert(
+        bytes memory _revert,
+        address _asset,
+        uint256 _amount
+    ) internal {
+        bytes32 _error = keccak256(_revert);
+
+        // We handle errors with regards to the asset being unsupported/unavailable.
+        if (
+            // 'Action requires an active reserve'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "2")) ||
+            // 'Action cannot be performed because the reserve is frozen'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "3")) ||
+            // 'Borrowing is not enabled'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "7")) ||
+            // collateral is (mostly) the same currency that is being borrowed
+            _error == keccak256(abi.encodeWithSignature("Error(string)", "13"))
+        ) {
+            revert IUWErrors.UNSUPPORTED_ASSET(_asset);
+        }
+
+        // We handle errors with regards to a user attempting a borrow when there is a lack of collateral.
+        if (
+            // 'User cannot withdraw more than the available balance'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "5")) ||
+            // 'The collateral balance is 0'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "9")) ||
+            // 'Health factor is lesser than the liquidation threshold'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "10")) ||
+            // 'There is not enough collateral to cover a new borrow'
+            _error ==
+            keccak256(abi.encodeWithSignature("Error(string)", "11")) ||
+            // User borrows on behalf, but allowance are too small
+            _error == keccak256(abi.encodeWithSignature("Error(string)", "59"))
+        ) {
+            revert IUWErrors.ASSET_AMOUNT_OUT_OF_BOUNDS(_asset, 0, 0, _amount);
+        }
+
+        revert(string(_revert));
     }
     // ╰─ Internal Functions ─────────────────────────────────────────────╯
 }

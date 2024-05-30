@@ -35,39 +35,51 @@ contract AaveStrategyTest is Test {
 
     /// @notice Does a full E2E test of the comet, includes every action.
     function _testE2E(uint256, uint256, uint256) internal {
-        // ILendingPoolV2 _pool = ILendingPoolV2(
-        //     strategy.ADDRESSES().getLendingPool()
-        // );
-
         vm.deal(address(strategy), 1 ether);
 
         // Deposit one of the available assets.
         strategy.deposit(
-            bytes32(uint256(1)),
+            UWConstants.SINGLE_POSITION,
             UWConstants.NATIVE_ASSET,
             1 ether
         );
 
-        strategy.debtHealth(bytes32(uint256(1)));
-
         strategy.borrow(
-            bytes32(uint256(1)),
+            UWConstants.SINGLE_POSITION,
             // borrow USDT token.
             address(0xdAC17F958D2ee523a2206206994597C13D831ec7),
             100_000_000
         );
 
-        strategy.debtHealth(bytes32(uint256(1)));
-
         strategy.borrow(
-            bytes32(uint256(1)),
+            UWConstants.SINGLE_POSITION,
             // borrow wBTC token.
             address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
             2_000_000
         );
 
-        strategy.debtHealth(bytes32(uint256(1)));
-        strategy.assets(bytes32(uint256(1)));
-        strategy.debt(bytes32(uint256(1)));
+        strategy.repay(
+            UWConstants.SINGLE_POSITION,
+            // borrow USDT token.
+            address(0xdAC17F958D2ee523a2206206994597C13D831ec7),
+            100_000_000
+        );
+
+        strategy.repay(
+            UWConstants.SINGLE_POSITION,
+            // borrow wBTC token.
+            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
+            2_000_000
+        );
+
+        strategy.withdraw(
+            UWConstants.SINGLE_POSITION,
+            UWConstants.NATIVE_ASSET,
+            1 ether
+        );
+
+        strategy.assets(UWConstants.SINGLE_POSITION);
+        strategy.debt(UWConstants.SINGLE_POSITION);
+        strategy.debtHealth(UWConstants.SINGLE_POSITION);
     }
 }
