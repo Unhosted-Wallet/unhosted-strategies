@@ -11,6 +11,12 @@ abstract contract UWBaseStrategy is ERC165, IUWMetadata {
     // @notice Tracks the singleton instance of this strategy.
     UWBaseStrategy private immutable SINGLETON;
 
+    modifier onlySinglePosition(bytes32 _position) {
+        // TODO: Custom error.
+        if (_position != UWConstants.SINGLE_POSITION) revert("");
+        _;
+    }
+
     constructor() {
         SINGLETON = this;
     }
