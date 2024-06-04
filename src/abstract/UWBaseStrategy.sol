@@ -16,6 +16,12 @@ abstract contract UWBaseStrategy is ERC165, IUWMetadata {
         SINGLETON = this;
     }
 
+    function setMetadata(bytes32 _ipfsMetadata) external {
+        require(address(this) == address(SINGLETON));
+        // TODO: Add another check to see if the sender is allowed to set this.
+        encodedIpfsMetadata = _ipfsMetadata;
+    }
+
     /// @notice Exposes the IPFS hash that contains the metadata of this strategy.
     /// @return the IPFS hash where the metadata for this strategy is located.
     function metadata() external view returns (string memory) {
@@ -23,12 +29,6 @@ abstract contract UWBaseStrategy is ERC165, IUWMetadata {
         if (address(this) != address(SINGLETON)) return SINGLETON.metadata();
         // Decode the ipfs hash and append it.
         return JBIpfsDecoder.decode("ipfs://", encodedIpfsMetadata);
-    }
-
-    function setMetadata(bytes32 _ipfsMetadata) external {
-        require(address(this) == address(SINGLETON));
-        // TODO: Add another check to see if the sender is allowed to set this.
-        encodedIpfsMetadata = _ipfsMetadata;
     }
 
     /// @dev See {IERC165-supportsInterface}.
